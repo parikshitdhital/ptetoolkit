@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PTE Collocations</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f0f2f8;color:#1a1a2e;min-height:100vh}
+header{background:#1e2a78;color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+header h1{font-size:17px;font-weight:700;letter-spacing:.3px}
+header span{font-size:12px;color:#a5b4fc}
+.tabs{background:#fff;border-bottom:2px solid #e5e7eb;display:flex;padding:0 24px;gap:4px}
+.tab{padding:13px 22px;cursor:pointer;font-size:13px;font-weight:600;color:#6b7280;border-bottom:3px solid transparent;margin-bottom:-2px;transition:.15s}
+.tab:hover{color:#1e2a78}
+.tab.active{color:#1e2a78;border-bottom-color:#1e2a78}
+.content{max-width:940px;margin:0 auto;padding:22px 20px}
+.controls{display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+.controls label{font-size:13px;font-weight:600;color:#374151}
+select,input[type=text]{padding:8px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;background:#fff;color:#111;cursor:pointer;outline:none;transition:border .15s}
+select:focus,input[type=text]:focus{border-color:#1e2a78}
+input[type=text]{flex:1;min-width:180px}
+.badge{font-size:12px;color:#6b7280;margin-left:4px}
+
+/* LIST */
+.cat-group{margin-bottom:26px}
+.cat-label{font-size:11px;font-weight:700;color:#1e2a78;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;padding-bottom:5px;border-bottom:1.5px solid #e0e4f7}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:8px}
+.col-card{background:#fff;border:1px solid #e5e7eb;border-radius:9px;padding:11px 14px;transition:box-shadow .15s}
+.col-card:hover{box-shadow:0 2px 10px rgba(30,42,120,.1)}
+.col-word{font-size:14px;font-weight:700;color:#1a1a2e}
+.col-word em{color:#1e2a78;font-style:normal}
+.col-ex{font-size:11.5px;color:#6b7280;margin-top:4px;line-height:1.5;font-style:italic}
+.no-results{text-align:center;color:#9ca3af;padding:50px;font-size:14px}
+
+/* FLASHCARD */
+.fc-wrap{display:flex;flex-direction:column;align-items:center;padding-top:10px}
+.fc-progress{font-size:12px;color:#9ca3af;margin-bottom:12px}
+.fc-card{width:100%;max-width:560px;min-height:210px;background:#fff;border-radius:16px;border:2px solid #e5e7eb;padding:36px 32px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:border-color .2s,box-shadow .2s;position:relative;user-select:none}
+.fc-card:hover{border-color:#1e2a78;box-shadow:0 4px 18px rgba(30,42,120,.12)}
+.fc-hint{font-size:11px;color:#d1d5db;position:absolute;bottom:14px;right:18px}
+.fc-front{text-align:center}
+.fc-front .word{font-size:28px;font-weight:800;color:#1a1a2e;letter-spacing:.3px}
+.fc-front .word em{color:#1e2a78;font-style:normal}
+.fc-front .sub{font-size:12px;color:#9ca3af;margin-top:8px}
+.fc-back{display:none;text-align:center}
+.fc-tag{display:inline-block;background:#e8eaf6;color:#1e2a78;font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;margin-bottom:12px}
+.fc-back .ex{font-size:15px;color:#374151;line-height:1.8;font-style:italic}
+.fc-card.flipped .fc-front{display:none}
+.fc-card.flipped .fc-back{display:block}
+.fc-btns{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;justify-content:center}
+
+/* QUIZ */
+.quiz-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.stat{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:12px 8px;text-align:center}
+.stat-val{font-size:24px;font-weight:800;color:#1e2a78}
+.stat-val.streak{color:#f59e0b}
+.stat-val.correct-col{color:#22c55e}
+.stat-val.wrong-col{color:#ef4444}
+.stat-lbl{font-size:10px;color:#9ca3af;margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+.streak-msg{text-align:center;font-size:13px;font-weight:600;color:#f59e0b;margin-bottom:12px;min-height:20px}
+.q-card{background:#fff;border:2px solid #e5e7eb;border-radius:14px;padding:26px}
+.q-num{font-size:11px;color:#9ca3af;margin-bottom:5px}
+.q-text{font-size:17px;font-weight:700;color:#1a1a2e;margin-bottom:4px}
+.q-text span{background:#e8eaf6;color:#1e2a78;padding:1px 5px;border-radius:4px}
+.q-cat{font-size:11px;color:#9ca3af;margin-bottom:20px}
+.options{display:flex;flex-direction:column;gap:9px}
+.opt{padding:13px 16px;border:2px solid #e5e7eb;border-radius:9px;cursor:pointer;font-size:14px;font-weight:500;color:#374151;text-align:left;background:#fff;width:100%;transition:.12s}
+.opt:hover:not(:disabled){border-color:#1e2a78;color:#1e2a78;background:#f0f2ff}
+.opt.correct{border-color:#22c55e!important;background:#f0fdf4!important;color:#166534!important;font-weight:600}
+.opt.wrong{border-color:#ef4444!important;background:#fef2f2!important;color:#991b1b!important}
+.opt:disabled{cursor:default}
+.feedback{border-radius:9px;padding:14px 16px;margin-top:10px;font-size:13px;line-height:1.7;display:none}
+.feedback.show{display:block}
+.feedback.fc-correct{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+.feedback.fc-wrong{background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d}
+.feedback strong{display:block;margin-bottom:4px;font-size:13.5px}
+.feedback em{font-size:12.5px;color:#555;font-style:italic}
+.next-btn{margin-top:16px;width:100%}
+.end-screen{text-align:center;padding:50px 20px;background:#fff;border-radius:16px}
+.end-screen h2{font-size:22px;font-weight:800;margin-bottom:6px}
+.final{font-size:56px;font-weight:900;color:#1e2a78;line-height:1}
+.final-sub{font-size:14px;color:#6b7280;margin:10px 0 28px}
+
+/* BUTTONS */
+.btn{padding:9px 20px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:.15s}
+.btn-primary{background:#1e2a78;color:#fff}
+.btn-primary:hover{background:#16205e}
+.btn-secondary{background:#fff;color:#374151;border:1.5px solid #d1d5db}
+.btn-secondary:hover{background:#f9fafb}
+.btn-success{background:#22c55e;color:#fff}
+.btn-success:hover{background:#16a34a}
+
+@media(max-width:600px){
+  .quiz-stats{grid-template-columns:repeat(2,1fr)}
+  .fc-front .word{font-size:22px}
+}
+
+/* MEANING QUIZ */
+.q-meaning{font-size:15px;font-style:italic;color:#1e2a78;margin-bottom:16px;padding:10px 14px;background:#f0f2ff;border-radius:8px;border-left:3px solid #1e2a78}
+
+/* PASSAGE FIB */
+.passage-controls{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.toggle-group{display:flex;border:1.5px solid #d1d5db;border-radius:8px;overflow:hidden}
+.toggle-btn{padding:7px 14px;font-size:12.5px;font-weight:600;background:#fff;color:#6b7280;cursor:pointer;border:none}
+.toggle-btn.active{background:#1e2a78;color:#fff}
+.passage-topic-tag{display:inline-block;background:#e8eaf6;color:#1e2a78;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px}
+.passage-hint{font-size:12px;color:#9ca3af;margin-bottom:12px;display:block}
+.passage-card{background:#fff;border:2px solid #e5e7eb;border-radius:14px;padding:24px;font-size:15px;line-height:2.3;color:#1a1a2e}
+.blank-drop{display:inline-block;min-width:100px;padding:3px 12px;margin:0 3px;border-bottom:2px dashed #9ca3af;border-radius:4px;background:#f9fafb;text-align:center;font-weight:700;color:#1e2a78;cursor:pointer;font-size:14px}
+.blank-drop.filled{background:#eef2ff;border-bottom:2px solid #1e2a78;cursor:pointer}
+.blank-drop.correct{background:#f0fdf4;border-bottom:2px solid #22c55e;color:#166534;cursor:default}
+.blank-drop.wrong{background:#fef2f2;border-bottom:2px solid #ef4444;color:#991b1b;cursor:default}
+select.blank-select{padding:4px 8px;border:1.5px solid #c7d2fe;border-radius:6px;font-size:13.5px;font-weight:700;color:#1e2a78;background:#eef2ff;margin:0 3px;cursor:pointer}
+select.blank-select.correct{border-color:#22c55e;background:#f0fdf4;color:#166534}
+select.blank-select.wrong{border-color:#ef4444;background:#fef2f2;color:#991b1b}
+.word-bank{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;padding:14px;background:#f9fafb;border-radius:10px;border:1.5px dashed #d1d5db}
+.word-chip{padding:7px 14px;background:#fff;border:1.5px solid #c7d2fe;border-radius:20px;font-size:13.5px;font-weight:700;color:#1e2a78;cursor:grab}
+.word-chip.used{opacity:.25;cursor:not-allowed}
+.passage-result{margin-top:16px;padding:14px 16px;border-radius:10px;background:#f9fafb;border:1px solid #e5e7eb;font-size:13px;line-height:1.7}
+.passage-result-item{margin-top:8px;padding-top:8px;border-top:1px solid #eee;color:#374151}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>PTE Academic Collocations</h1>
+  <span id="total-count"></span>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchMode('list')">📋 List</div>
+  <div class="tab" onclick="switchMode('flash')">🃏 Flashcards</div>
+  <div class="tab" onclick="switchMode('quiz')">🧠 Quiz</div>
+  <div class="tab" onclick="switchMode('mquiz')">🎯 Meaning Quiz</div>
+  <div class="tab" onclick="switchMode('passage')">📝 Passage FIB</div>
+</div>
+
+<div class="content">
+  <div id="mode-list"></div>
+  <div id="mode-flash" style="display:none"></div>
+  <div id="mode-quiz" style="display:none"></div>
+  <div id="mode-mquiz" style="display:none"></div>
+  <div id="mode-passage" style="display:none"></div>
+</div>
+
+<script>
+// ── CATEGORIES ──────────────────────────────
+const CATS = [
+  "Adjective + Noun",
+  "Verb + Noun",
+  "Adverb + Adjective",
+  "Noun + Noun",
+  "Verb + Preposition",
+  "Fixed Academic Phrases"
+];
+
+// ── DATA: [stem, answer, cat_index, example, meaning] ─
+const DATA = [
+// ADJECTIVE + NOUN (0)
+["significant","impact",0,"The new policy had a significant impact on the economy.","a major effect on something"],
+["fundamental","principle",0,"Equal access to education is a fundamental principle of policy.","a basic rule or belief something is based on"],
+["inherent","risk",0,"Every surgical procedure carries an inherent risk.","a risk that naturally exists in something"],
+["demographic","shift",0,"The country is experiencing a major demographic shift.","a change in the makeup of a population"],
+["conceptual","framework",0,"The study uses a conceptual framework drawn from sociology.","a set of ideas used to structure a study"],
+["economic","growth",0,"Tourism remains a key driver of economic growth.","an increase in a country's wealth or output"],
+["renewable","energy",0,"Investment in renewable energy doubled over the decade.","power from sources that never run out"],
+["extensive","research",0,"Extensive research supports the link between diet and health.","a large and thorough amount of study"],
+["compelling","evidence",0,"The trial produced compelling evidence of the drug's effectiveness.","proof that is very convincing"],
+["profound","effect",0,"Early childhood nutrition has a profound effect on development.","a very deep and important influence"],
+["diverse","range",0,"The university offers a diverse range of postgraduate courses.","a wide variety of different things"],
+["unprecedented","growth",0,"Online education experienced unprecedented growth after 2020.","an increase never seen before"],
+["crucial","role",0,"Teachers play a crucial role in shaping student motivation.","an extremely important part someone plays"],
+["widespread","acceptance",0,"Electric vehicles are gaining widespread acceptance.","being approved of by most people"],
+["sustainable","development",0,"The report links sustainable development to responsible resource use.","growth that does not damage the future"],
+["considerable","attention",0,"Artificial intelligence has attracted considerable attention.","a large amount of interest or focus"],
+["empirical","evidence",0,"The hypothesis lacks empirical evidence from controlled trials.","proof based on real observation or experiment"],
+["integral","part",0,"Peer feedback is an integral part of the writing process.","an essential piece that cannot be removed"],
+["mutual","benefit",0,"Trade agreements are designed for mutual benefit.","an advantage shared by both sides"],
+["rapid","expansion",0,"The rapid expansion of the city strained infrastructure.","very fast growth in size"],
+["adverse","effect",0,"Excessive screen time can have an adverse effect on focus.","a harmful or negative result"],
+["viable","alternative",0,"Solar power offers a viable alternative to fossil fuels.","another option that could realistically work"],
+["vested","interest",0,"Lobbyists have a vested interest in delaying reform.","a personal reason to want a certain outcome"],
+["pressing","issue",0,"Youth unemployment is a pressing issue facing many governments.","a problem that urgently needs attention"],
+["finite","resources",0,"Fresh water is one of the planet's most finite resources.","supplies that are limited and can run out"],
+["collaborative","effort",0,"The vaccine was a collaborative effort between universities.","work done together by several people or groups"],
+["cognitive","development",0,"Play is essential to a child's cognitive development.","the growth of thinking and understanding skills"],
+["ethical","considerations",0,"Genetic testing raises serious ethical considerations.","questions about what is morally right"],
+["global","phenomenon",0,"Urban migration has become a global phenomenon.","something happening in many countries at once"],
+["key","factor",0,"Cost is a key factor in students' choice of university.","one of the most important causes"],
+["long-term","consequences",0,"Deforestation has long-term consequences for soil quality.","results that appear far into the future"],
+["pivotal","moment",0,"The discovery marked a pivotal moment in cancer research.","a turning point that changes everything after it"],
+["prior","knowledge",0,"Effective teaching builds on students' prior knowledge.","information someone already had before"],
+["profound","implications",0,"Automation has profound implications for low-skill employment.","very serious and far-reaching effects"],
+["rigorous","analysis",0,"The claims did not survive rigorous analysis of the data.","an extremely careful and detailed examination"],
+["scarce","resources",0,"Hospitals must allocate scarce resources during emergencies.","supplies that are in short and limited amount"],
+["social","cohesion",0,"Shared public spaces strengthen social cohesion in cities.","the sense of unity within a community"],
+["technological","advances",0,"Technological advances have transformed remote diagnosis.","new and improved developments in technology"],
+["underlying","assumption",0,"The model rests on an underlying assumption of rationality.","a belief taken for granted without proof"],
+["vast","majority",0,"The vast majority of participants completed the survey.","almost all of a group"],
+["critical","thinking",0,"Universities aim to develop critical thinking in students.","the careful judging and analysing of ideas"],
+["dominant","factor",0,"Price remains the dominant factor in consumer decisions.","the most influential cause among several"],
+["emerging","trend",0,"Remote work is an emerging trend across many industries.","a new pattern that is just starting to appear"],
+["excessive","consumption",0,"Excessive consumption of sugar leads to health problems.","using or eating far too much of something"],
+["growing","concern",0,"Pollution is a growing concern in urban areas.","a worry that is increasing over time"],
+["major","breakthrough",0,"Scientists made a major breakthrough in cancer treatment.","an important new discovery or achievement"],
+["strong","evidence",0,"There is strong evidence linking smoking and lung disease.","proof that clearly supports a claim"],
+["targeted","approach",0,"The government took a targeted approach to reducing crime.","a plan aimed at a specific goal or group"],
+["ultimate","goal",0,"The ultimate goal of education is lifelong learning.","the final and most important aim"],
+["unique","opportunity",0,"Studying abroad offers a unique opportunity for growth.","a chance that does not come often"],
+["urgent","need",0,"There is an urgent need for affordable housing.","something required immediately"],
+["widespread","use",0,"Smartphones have seen widespread use across all age groups.","being used by many people or in many places"],
+["central","issue",0,"Inequality remains the central issue in this debate.","the main problem being discussed"],
+["common","ground",0,"The two sides found common ground on climate policy.","shared views or interests between two sides"],
+["deep","understanding",0,"Research requires a deep understanding of the subject.","a thorough and detailed knowledge of something"],
+["direct","impact",0,"The drought had a direct impact on food production.","an effect that happens without anything in between"],
+["environmental","impact",0,"The factory's environmental impact was thoroughly assessed.","the effect something has on nature"],
+["equal","opportunity",0,"The law ensures equal opportunity in employment.","the same chance given to everyone"],
+["false","assumption",0,"The argument was built on a false assumption.","a belief that turns out to be untrue"],
+["general","consensus",0,"There is general consensus that exercise improves health.","an opinion most people agree on"],
+["growing","awareness",0,"There is growing awareness of mental health issues.","an increasing understanding of an issue"],
+["heavy","reliance",0,"The country's heavy reliance on oil creates risks.","depending on something to a large degree"],
+["joint","effort",0,"Solving climate change requires a joint effort globally.","work carried out together by multiple parties"],
+["key","challenge",0,"Funding remains the key challenge for startups.","one of the main difficulties faced"],
+["limited","access",0,"Many rural communities have limited access to healthcare.","restricted ability to reach or use something"],
+["major","concern",0,"Water scarcity is a major concern in arid regions.","a serious worry about something"],
+["negative","consequence",0,"Poor diet can have a negative consequence on health.","a harmful result of an action"],
+["notable","exception",0,"With a notable exception, all students passed the exam.","a case that clearly differs from the rest"],
+["open","access",0,"The journal adopted an open access publishing model.","free and unrestricted availability to something"],
+["positive","outcome",0,"Mediation led to a positive outcome for both parties.","a good or favourable result"],
+["practical","solution",0,"The team proposed a practical solution to the problem.","a workable answer to a real problem"],
+["primary","objective",0,"The primary objective was to reduce carbon emissions.","the main goal of a plan or task"],
+["public","awareness",0,"The campaign significantly raised public awareness.","how much the general public knows about an issue"],
+["serious","concern",0,"The data leak raised a serious concern about privacy.","a significant worry that needs attention"],
+["significant","change",0,"The merger led to a significant change in management.","a large and noticeable difference"],
+["significant","difference",0,"There is a significant difference between the two groups.","a gap large enough to matter"],
+["significant","increase",0,"There was a significant increase in demand for housing.","a large rise in amount or number"],
+["social","inequality",0,"Education can help reduce social inequality over time.","unequal conditions between groups in society"],
+["strong","foundation",0,"A good education provides a strong foundation for life.","a solid base something is built upon"],
+["structural","change",0,"The economy needs structural change to remain competitive.","a change to how a system is organised"],
+["substantial","increase",0,"The report revealed a substantial increase in costs.","a large and noticeable rise in amount"],
+["systemic","problem",0,"Corruption is a systemic problem in some institutions.","an issue built into the whole system"],
+["technical","expertise",0,"The project required considerable technical expertise.","specialised skill and knowledge in a field"],
+["theoretical","framework",0,"The thesis is built on a sound theoretical framework.","the set of ideas that guide research"],
+["thorough","investigation",0,"The incident prompted a thorough investigation.","a detailed and complete inquiry"],
+["unprecedented","challenge",0,"The pandemic presented an unprecedented challenge globally.","a difficulty never faced before"],
+["active","participation",0,"The teacher encouraged active participation in class.","taking an engaged and involved part in something"],
+["broad","consensus",0,"There is broad consensus on the need for climate action.","wide agreement among many people"],
+["clear","distinction",0,"The report draws a clear distinction between the two groups.","an obvious difference between two things"],
+["commercial","success",0,"The film achieved commercial success at the box office.","doing very well in terms of sales or profit"],
+["complex","relationship",0,"There is a complex relationship between stress and health.","a connection with many interacting parts"],
+["consistent","results",0,"The experiment produced consistent results across trials.","outcomes that stay the same each time"],
+["controversial","issue",0,"Immigration remains a controversial issue in many countries.","a topic that causes strong disagreement"],
+["creative","approach",0,"The teacher used a creative approach to engage students.","an original and imaginative way of doing something"],
+["cultural","diversity",0,"Cities benefit from cultural diversity in many ways.","a wide variety of cultures existing together"],
+["decisive","factor",0,"Leadership style can be a decisive factor in team success.","the deciding cause of an outcome"],
+["detailed","analysis",0,"The report provides a detailed analysis of market trends.","a thorough and precise examination"],
+
+// VERB + NOUN (1)
+["conduct","research",1,"The team conducted research on sleep patterns in adolescents.","to carry out a study to find new information"],
+["impose","restrictions",1,"The city imposed restrictions on water use during the drought.","to officially limit what people can do"],
+["propose","a solution",1,"The committee proposed a solution to the parking shortage.","to suggest a way to solve a problem"],
+["gain","insight",1,"Interviews helped researchers gain insight into voter behaviour.","to develop a clearer understanding of something"],
+["reach","a consensus",1,"After debate, the panel reached a consensus on the policy.","to arrive at an agreement everyone accepts"],
+["raise","awareness",1,"The campaign aims to raise awareness of mental health support.","to help more people learn about an issue"],
+["draw","a conclusion",1,"It is too early to draw a conclusion from one study.","to decide something based on evidence"],
+["meet","demand",1,"Local farms struggled to meet demand for organic produce.","to supply enough of something people want"],
+["address","an issue",1,"The policy addresses the issue of overcrowded classrooms.","to deal with or discuss a problem"],
+["bear","responsibility",1,"Manufacturers bear responsibility for product safety.","to be accountable for something"],
+["establish","a framework",1,"The treaty established a framework for carbon trading.","to create a structure or system to work within"],
+["generate","revenue",1,"The festival generates revenue for small businesses.","to produce income or money"],
+["pose","a threat",1,"Invasive species pose a threat to native wildlife.","to create a danger to something"],
+["play","a role",1,"Diet plays a role in the prevention of heart disease.","to be involved in or influence something"],
+["undergo","a transformation",1,"The industry underwent a transformation after digital streaming.","to go through a major change"],
+["undertake","a study",1,"The ministry undertook a study of rural internet access.","to begin and carry out a piece of research"],
+["allocate","resources",1,"Schools must allocate resources to teacher training.","to assign money or supplies for a purpose"],
+["make","a decision",1,"Leaders must make a decision quickly during a crisis.","to choose between options"],
+["take","action",1,"The government agreed to take action on climate change.","to do something in response to a situation"],
+["have","an impact",1,"Social media has had a major impact on communication.","to cause a noticeable effect"],
+["achieve","a goal",1,"With hard work, anyone can achieve a goal they set.","to succeed in reaching an aim"],
+["acquire","knowledge",1,"Students need opportunities to acquire knowledge independently.","to gain new information or understanding"],
+["build","a relationship",1,"Trust is essential to build a relationship in business.","to develop a connection with someone over time"],
+["carry out","research",1,"The scientists carried out research over three years.","to perform a scientific or academic study"],
+["cause","damage",1,"The storm caused damage to hundreds of homes.","to harm or spoil something"],
+["challenge","assumptions",1,"Research often challenges assumptions we take for granted.","to question ideas people take for granted"],
+["conduct","an experiment",1,"The team conducted an experiment to test the hypothesis.","to perform a scientific test"],
+["create","opportunities",1,"Education creates opportunities for social mobility.","to make chances for people to benefit"],
+["develop","skills",1,"Internships help students develop skills for the workplace.","to build abilities through practice or learning"],
+["draw","attention",1,"The report drew attention to gaps in the research.","to make people notice something"],
+["drive","change",1,"Young people have the power to drive change in society.","to be the force behind something changing"],
+["evaluate","performance",1,"Managers must regularly evaluate performance of their teams.","to judge how well someone or something is doing"],
+["expand","access",1,"The programme aims to expand access to higher education.","to make something available to more people"],
+["face","challenges",1,"Developing countries face challenges accessing clean water.","to be confronted with difficulties"],
+["find","solutions",1,"Engineers worked together to find solutions to the problem.","to discover ways to solve problems"],
+["foster","collaboration",1,"Open offices are designed to foster collaboration.","to encourage people to work together"],
+["gain","experience",1,"Volunteering is a great way to gain experience.","to learn through doing something over time"],
+["gather","data",1,"Researchers gathered data from over five hundred participants.","to collect information for a study"],
+["have","consequences",1,"Every decision we make can have consequences for others.","to lead to results, often serious ones"],
+["implement","policies",1,"Governments must implement policies to reduce emissions.","to put official rules or plans into action"],
+["improve","performance",1,"Regular feedback can help improve performance at work.","to make someone or something work better"],
+["increase","awareness",1,"The documentary helped increase awareness of ocean pollution.","to make more people aware of something"],
+["influence","decisions",1,"Media coverage can heavily influence decisions in an election.","to affect the choices people make"],
+["make","an effort",1,"Students should make an effort to engage with the material.","to try hard to do something"],
+["make","progress",1,"The project is making progress despite early setbacks.","to move forward towards a goal"],
+["manage","risks",1,"Effective leaders know how to manage risks in uncertain times.","to control possible dangers carefully"],
+["meet","expectations",1,"The product failed to meet expectations of early adopters.","to perform as well as people hoped"],
+["overcome","obstacles",1,"Determination helps people overcome obstacles in their careers.","to succeed despite difficulties"],
+["provide","support",1,"Counselling services provide support to students in distress.","to give help or assistance"],
+["reduce","costs",1,"Automation has helped manufacturers reduce costs significantly.","to lower the amount something costs"],
+["seek","solutions",1,"The global community must seek solutions to climate change.","to look for ways to solve a problem"],
+["set","goals",1,"Setting clear goals is the first step toward achievement.","to decide what you want to achieve"],
+["solve","problems",1,"Critical thinking helps students solve problems independently.","to find answers to difficulties"],
+["support","development",1,"Foreign aid can support development in low-income nations.","to help something grow or progress"],
+["take","responsibility",1,"Leaders must take responsibility for their team's results.","to accept that you are accountable for something"],
+["test","hypotheses",1,"The experiment was designed to test several hypotheses.","to check whether an idea is scientifically correct"],
+["transfer","knowledge",1,"Effective teaching helps transfer knowledge to students.","to pass information or skills to others"],
+["bridge","the gap",1,"The programme aims to bridge the gap between school and work.","to reduce the difference between two things"],
+["conduct","a survey",1,"The researchers conducted a survey of one thousand households.","to gather opinions from a group of people"],
+["demonstrate","ability",1,"The test is designed to demonstrate ability in writing.","to show that you can do something well"],
+["derive","benefit",1,"Communities can derive benefit from sustainable tourism.","to gain an advantage from something"],
+["develop","a strategy",1,"The company developed a strategy to enter new markets.","to create a plan to achieve a goal"],
+["drive","innovation",1,"Competition can drive innovation in the technology sector.","to be the main cause of new ideas or inventions"],
+["establish","connections",1,"Networking events help professionals establish connections.","to build links between people or organisations"],
+["examine","evidence",1,"The court will examine evidence from both sides.","to look closely at facts or proof"],
+["exert","influence",1,"Money can exert influence over political decisions.","to use power to affect outcomes"],
+["form","partnerships",1,"Charities form partnerships with businesses for funding.","to create working relationships between groups"],
+["formulate","policies",1,"Governments formulate policies based on research findings.","to carefully design official rules or plans"],
+["fulfill","obligations",1,"Countries must fulfill obligations under international law.","to complete duties you are required to do"],
+["gain","access",1,"Not all students gain access to quality education.","to obtain the ability to use or enter something"],
+["generate","interest",1,"The new exhibit generated interest from museums worldwide.","to cause people to become curious about something"],
+["identify","patterns",1,"Researchers used software to identify patterns in the data.","to notice a repeated trend in information"],
+["increase","productivity",1,"Better tools can significantly increase productivity.","to produce more in the same amount of time"],
+["launch","a campaign",1,"The charity launched a campaign to fight food poverty.","to begin an organised effort to achieve a goal"],
+["maintain","standards",1,"Schools must maintain standards in teaching and learning.","to keep a consistent level of quality"],
+["measure","outcomes",1,"It is important to measure outcomes of health programmes.","to assess the results of an action or programme"],
+["mitigate","risks",1,"Diversifying investments can help mitigate risks.","to reduce the seriousness of possible dangers"],
+["monitor","progress",1,"Teachers monitor progress through regular assessments.","to regularly check how something is developing"],
+["prioritize","needs",1,"Health services must prioritize needs of the most vulnerable.","to deal with the most important needs first"],
+["produce","results",1,"The new method consistently produces results faster.","to generate a clear, measurable outcome"],
+["promote","equality",1,"Laws should promote equality in the workplace.","to encourage fair treatment for everyone"],
+["pursue","goals",1,"Students are encouraged to pursue goals beyond the classroom.","to work towards achieving an aim"],
+["raise","questions",1,"The findings raise questions about current safety standards.","to cause people to wonder or doubt something"],
+["reach","an agreement",1,"After months of talks, they finally reached an agreement.","to come to a shared decision"],
+["recognize","patterns",1,"Machine learning is used to recognize patterns in data.","to notice a recurring arrangement or trend"],
+["reduce","inequality",1,"Progressive taxation can help reduce inequality.","to make conditions fairer between groups"],
+["resolve","conflicts",1,"Mediation is an effective way to resolve conflicts.","to settle disagreements between people"],
+["retain","information",1,"Visual aids help students retain information better.","to remember or keep hold of facts"],
+["set","priorities",1,"Good time management means knowing how to set priorities.","to decide what matters most and should be done first"],
+["shift","focus",1,"The debate has shifted focus from costs to outcomes.","to change what receives the main attention"],
+["spark","debate",1,"The controversial bill sparked debate across the country.","to cause people to start discussing or arguing"],
+["strengthen","ties",1,"Cultural exchanges help strengthen ties between countries.","to make a relationship or connection stronger"],
+["tackle","problems",1,"Governments must tackle problems of homelessness urgently.","to make a serious attempt to deal with issues"],
+["take","measures",1,"The school took measures to improve student safety.","to carry out actions to achieve a purpose"],
+["take","notes",1,"Students are advised to take notes during lectures.","to write down important information"],
+["validate","findings",1,"Further research is needed to validate these findings.","to confirm that results are accurate"],
+["verify","results",1,"Scientists verify results by repeating experiments.","to check that results are correct"],
+["yield","results",1,"Hard work and consistency will eventually yield results.","to produce an outcome after effort"],
+["make","a contribution",1,"Every individual can make a contribution to their community.","to give something that helps a larger effort"],
+["follow","instructions",1,"It is important to follow instructions carefully in an exam.","to do exactly what you are told to do"],
+["achieve","success",1,"Persistence is often the key to achieving success.","to accomplish what you set out to do"],
+["save","time",1,"Planning your day in advance can help you save time.","to avoid wasting time by being efficient"],
+["make","a mistake",1,"It is natural to make a mistake when learning something new.","to do something incorrectly by accident"],
+["have","a conversation",1,"The two leaders had a conversation about trade relations.","to talk with someone about a topic"],
+["spend","money",1,"Consumers spend money differently during economic downturns.","to use money to pay for something"],
+["build","confidence",1,"Succeeding in small tasks helps build confidence in students.","to gradually develop a belief in your own abilities"],
+["express","an opinion",1,"Students should feel comfortable expressing an opinion in class.","to share what you personally think"],
+["draw","comparisons",1,"It is useful to draw comparisons between different cases.","to point out similarities between things"],
+["weigh","options",1,"It is important to weigh options before making a decision.","to carefully consider different choices"],
+["challenge","the norm",1,"Innovators often challenge the norm to create new solutions.","to question what is usually accepted as normal"],
+["reinforce","beliefs",1,"Social media can reinforce beliefs rather than challenge them.","to make existing opinions stronger"],
+["shed light","on",1,"The study sheds light on the causes of urban poverty.","to make something easier to understand"],
+["take a","break",1,"It is healthy to take a break every hour when studying.","to stop working for a short period of rest"],
+
+// ADVERB + ADJECTIVE (2)
+["highly","effective",2,"The new drug proved highly effective in clinical trials.","very successful at producing the desired result"],
+["closely","related",2,"The two species are closely related in their DNA structure.","very similar or strongly connected"],
+["widely","available",2,"Smartphones are now widely available even in developing nations.","easy to obtain in many places"],
+["deeply","concerned",2,"Environmentalists are deeply concerned about rising sea levels.","very worried about something"],
+["firmly","established",2,"Democracy is firmly established in most European nations.","solidly set up and unlikely to change"],
+["fully","aware",2,"Citizens should be fully aware of their rights.","completely conscious of something"],
+["greatly","influenced",2,"His work was greatly influenced by earlier philosophers.","strongly shaped or affected by something"],
+["heavily","dependent",2,"The region is heavily dependent on agriculture for income.","relying on something to a large extent"],
+["increasingly","common",2,"Remote working has become increasingly common since 2020.","happening more and more often"],
+["largely","unknown",2,"The long-term effects of the drug remain largely unknown.","mostly not understood or discovered yet"],
+["mutually","exclusive",2,"Profit and sustainability are not mutually exclusive goals.","unable to exist or be true at the same time"],
+["particularly","important",2,"Hydration is particularly important during exercise.","especially significant compared to other things"],
+["potentially","harmful",2,"Some food additives are potentially harmful in large amounts.","possibly able to cause damage"],
+["primarily","responsible",2,"Human activity is primarily responsible for climate change.","mainly the cause of something"],
+["readily","available",2,"Information is now readily available through the internet.","easy to get whenever needed"],
+["seriously","affected",2,"Coastal communities are seriously affected by flooding.","harmed to a significant degree"],
+["significantly","different",2,"The results were significantly different from earlier studies.","noticeably unlike something else"],
+["strongly","opposed",2,"Local residents are strongly opposed to the new development.","firmly against something"],
+["ultimately","responsible",2,"Governments are ultimately responsible for public safety.","responsible in the end, above all others"],
+["widely","accepted",2,"It is widely accepted that exercise improves mental health.","believed to be true by most people"],
+["broadly","similar",2,"The findings were broadly similar to previous research.","alike in most general ways"],
+["carefully","considered",2,"Each option was carefully considered before a decision was made.","thought about with great care before deciding"],
+["clearly","defined",2,"Goals should be clearly defined before beginning a project.","described in a precise and unambiguous way"],
+["completely","different",2,"The two approaches are completely different in their methods.","not alike in any way"],
+["consistently","high",2,"The school has maintained consistently high standards.","staying at a high level over time"],
+["critically","important",2,"Clean water is critically important for public health.","essential and extremely necessary"],
+["deeply","rooted",2,"Traditions are often deeply rooted in cultural identity.","firmly fixed and hard to remove or change"],
+["directly","responsible",2,"Poor maintenance was directly responsible for the accident.","the immediate cause, without anything in between"],
+["easily","accessible",2,"The new app makes financial advice easily accessible.","simple to reach or obtain"],
+["entirely","dependent",2,"Children are entirely dependent on adults for their needs.","completely relying on something"],
+["equally","important",2,"Sleep is equally important as diet for good health.","just as significant as something else"],
+["essentially","different",2,"The two theories are essentially different at their core.","different in a fundamental way"],
+["frequently","cited",2,"This study is one of the most frequently cited in the field.","often referred to by others as a source"],
+["generally","accepted",2,"It is generally accepted that prevention is better than cure.","agreed on by most people"],
+["greatly","reduced",2,"Carbon emissions have been greatly reduced since the new law.","made much smaller in amount"],
+["highly","complex",2,"The human brain is a highly complex organ.","very complicated, with many parts"],
+["highly","significant",2,"The discovery was highly significant for the field of medicine.","extremely important or meaningful"],
+["increasingly","difficult",2,"Finding affordable housing has become increasingly difficult.","becoming harder over time"],
+["inherently","risky",2,"Investing in new businesses is inherently risky.","naturally dangerous, by its very nature"],
+["largely","responsible",2,"Deforestation is largely responsible for habitat loss.","mostly the cause of something"],
+["moderately","successful",2,"The pilot programme was moderately successful.","achieving a fair, but not great, level of success"],
+["morally","responsible",2,"We are morally responsible for the impact of our choices.","answerable for something on ethical grounds"],
+["notably","different",2,"Results in the second trial were notably different.","clearly and noticeably unlike something"],
+["overwhelmingly","positive",2,"The response to the new product was overwhelmingly positive.","almost entirely favourable"],
+["partially","successful",2,"The peace negotiations were only partially successful.","successful to some extent, but not fully"],
+["politically","sensitive",2,"Immigration is a politically sensitive topic in many countries.","likely to cause disagreement in a political context"],
+["poorly","understood",2,"The causes of the disease remain poorly understood.","not yet explained or known well"],
+["practically","impossible",2,"It is practically impossible to predict earthquakes precisely.","extremely difficult, almost impossible in reality"],
+["profoundly","different",2,"Life in rural and urban areas can be profoundly different.","different in a very deep and significant way"],
+["rarely","discussed",2,"Mental health at work is rarely discussed openly.","seldom talked about"],
+["readily","apparent",2,"The problem was readily apparent from the first review.","obvious and easy to notice immediately"],
+["relatively","straightforward",2,"The solution turned out to be relatively straightforward.","fairly simple compared to expectations"],
+["remarkably","similar",2,"The two cultures are remarkably similar in their traditions.","surprisingly alike"],
+["slightly","different",2,"Each student interpreted the poem in a slightly different way.","different in only a small way"],
+["socially","acceptable",2,"Norms determine what is socially acceptable in a culture.","seen as appropriate by society"],
+["technically","feasible",2,"The project is technically feasible but expensive.","possible to do from a practical standpoint"],
+["widely","recognized",2,"The problem is widely recognized but rarely addressed.","known and acknowledged by many people"],
+["strongly","supported",2,"The proposal was strongly supported by the research team.","backed with a lot of approval or evidence"],
+["deeply","embedded",2,"Bias can be deeply embedded in institutional culture.","firmly built into something over time"],
+["rapidly","changing",2,"We live in a rapidly changing technological landscape.","altering very quickly"],
+
+// NOUN + NOUN (3)
+["climate","change",3,"Scientists agree that climate change is largely human-caused.","the long-term shift in global weather patterns"],
+["job","satisfaction",3,"Job satisfaction is closely linked to workplace culture.","how content someone feels with their work"],
+["market","share",3,"The company increased its market share by 15% last year.","the portion of total sales a company controls"],
+["population","growth",3,"Rapid population growth puts pressure on urban infrastructure.","the increase in the number of people over time"],
+["research","findings",3,"The research findings were published in a major journal.","the results discovered through a study"],
+["risk","assessment",3,"A thorough risk assessment is required before construction.","the process of identifying possible dangers"],
+["decision","making",3,"Good decision making requires both data and experience.","the process of choosing between options"],
+["knowledge","gap",3,"There is a knowledge gap between graduates and employers.","a difference in what different groups know"],
+["policy","change",3,"A policy change is needed to address housing shortages.","an official adjustment to rules or plans"],
+["resource","allocation",3,"Efficient resource allocation is essential in healthcare.","the way money or supplies are distributed"],
+["health","care",3,"Access to quality health care is a basic human right.","services provided to maintain or improve health"],
+["case","study",3,"The lecture included a case study from the tech industry.","a detailed examination of one particular example"],
+["data","analysis",3,"Data analysis revealed a significant trend in the results.","the process of examining information to find meaning"],
+["impact","assessment",3,"An impact assessment was required before the project began.","a formal review of the effects of an action"],
+["information","technology",3,"Information technology has transformed the modern workplace.","the use of computers to manage information"],
+["quality","control",3,"Quality control is essential in pharmaceutical manufacturing.","the process of checking products meet a standard"],
+["skill","development",3,"The programme focuses on skill development in young workers.","the process of building new abilities"],
+["staff","training",3,"Regular staff training improves service quality in hospitals.","teaching employees the skills they need for work"],
+["supply","chain",3,"The pandemic disrupted the global supply chain significantly.","the network involved in producing and delivering goods"],
+["time","management",3,"Effective time management is crucial for academic success.","the skill of organising how time is used"],
+["brain","drain",3,"Brain drain is a serious problem for developing economies.","the loss of skilled workers to other countries"],
+["carbon","footprint",3,"Reducing your carbon footprint starts with small changes.","the amount of carbon emissions a person or activity causes"],
+["conflict","resolution",3,"Schools should teach conflict resolution as part of the curriculum.","the process of settling a disagreement"],
+["cost","reduction",3,"Automation has enabled significant cost reduction in manufacturing.","the lowering of expenses"],
+["customer","satisfaction",3,"Customer satisfaction scores improved after the redesign.","how happy customers are with a product or service"],
+["education","system",3,"The education system needs reform to meet modern demands.","the structure through which people are taught"],
+["energy","consumption",3,"New buildings must meet strict energy consumption limits.","the amount of energy used"],
+["feedback","loop",3,"A feedback loop helps organizations continuously improve.","a process where results are used to improve future action"],
+["gender","gap",3,"The gender gap in pay remains a significant issue.","the difference in outcomes between men and women"],
+["government","policy",3,"Government policy can greatly influence economic outcomes.","the official plans and rules set by a government"],
+["growth","rate",3,"The growth rate of the economy slowed in the second quarter.","how quickly something increases over a period"],
+["habitat","destruction",3,"Habitat destruction is the leading cause of biodiversity loss.","the loss of natural environments where animals live"],
+["human","rights",3,"The organization campaigns for the protection of human rights.","the basic freedoms every person is entitled to"],
+["income","inequality",3,"Income inequality has risen sharply in many nations.","the unequal distribution of earnings among people"],
+["infrastructure","development",3,"Infrastructure development is vital for economic growth.","the building of roads, utilities, and public systems"],
+["knowledge","base",3,"The internet has vastly expanded the world's knowledge base.","the total information available on a subject"],
+["labor","market",3,"Changes in the labor market demand new kinds of skills.","the system where workers and jobs are matched"],
+["land","use",3,"Sustainable land use is critical for food security.","how a piece of land is developed or managed"],
+["leadership","style",3,"Leadership style can significantly affect team morale.","the particular way someone leads a team"],
+["learning","curve",3,"There is always a steep learning curve with new technology.","the rate at which a new skill is learned"],
+["lifestyle","choice",3,"Diet is often a lifestyle choice rather than a medical issue.","a decision about how someone chooses to live"],
+["market","economy",3,"A market economy is driven by supply and demand.","an economic system based on supply and demand"],
+["media","coverage",3,"Media coverage of the event shaped public opinion.","how much attention an event receives from the press"],
+["migration","pattern",3,"Climate change is affecting human migration patterns.","the typical routes or trends people follow when moving"],
+["opportunity","cost",3,"Choosing one path always involves an opportunity cost.","what is given up when choosing one option over another"],
+["pay","gap",3,"The pay gap between genders remains a topic of debate.","the difference in wages between groups"],
+["peer","pressure",3,"Peer pressure can influence both positive and negative behaviour.","the influence people feel from others their own age"],
+["performance","gap",3,"The school identified a performance gap between groups.","a difference in results between groups"],
+["problem","solving",3,"Problem solving is a key skill in academic and professional life.","the ability to find solutions to difficulties"],
+["public","health",3,"Vaccination programmes are central to public health strategy.","the health of the population as a whole"],
+["research","gap",3,"The paper identifies a clear research gap in the literature.","an area a study has not yet examined"],
+["revenue","stream",3,"Subscription models provide a reliable revenue stream.","a source of ongoing income"],
+["risk","factor",3,"Obesity is a major risk factor for cardiovascular disease.","something that increases the chance of a bad outcome"],
+["role","model",3,"Teachers can serve as powerful role models for students.","a person others look up to and imitate"],
+["safety","net",3,"The welfare system acts as a safety net for vulnerable people.","a system that protects people from serious hardship"],
+["side","effect",3,"Every medication comes with the possibility of a side effect.","an unintended result, often of a medicine"],
+["skill","gap",3,"The skill gap between graduates and industry needs addressing.","the difference between skills people have and what is needed"],
+["social","media",3,"Social media has changed how people consume news.","online platforms used for sharing and communication"],
+["success","rate",3,"The programme has a high success rate among participants.","the proportion of attempts that succeed"],
+["tax","reform",3,"Tax reform is necessary to fund social programmes adequately.","a change made to how taxes are collected"],
+["technology","transfer",3,"Technology transfer helps developing countries industrialise.","the sharing of technical knowledge between groups"],
+["trade","deficit",3,"The trade deficit widened due to rising import costs.","when a country imports more than it exports"],
+["value","system",3,"A shared value system promotes unity within communities.","the set of principles someone lives by"],
+["water","scarcity",3,"Water scarcity is a growing threat in many regions.","a shortage of available fresh water"],
+["age","group",3,"The programme is designed for the 18 to 25 age group.","a category of people of similar age"],
+["birth","rate",3,"Many developed countries have seen a declining birth rate.","the number of births in a population over time"],
+["career","path",3,"Students are encouraged to explore different career paths.","the direction someone's working life follows"],
+["class","size",3,"Smaller class size allows for more individual attention.","the number of students in a single class"],
+["consumer","behaviour",3,"Understanding consumer behaviour is key to marketing success.","the way people choose to buy and use products"],
+["crime","rate",3,"Urban planning can influence the local crime rate.","how often crimes occur in an area"],
+["death","rate",3,"Better healthcare has reduced the death rate from infections.","the number of deaths in a population over time"],
+["exam","results",3,"Exam results are not the only measure of student achievement.","the scores or grades achieved in a test"],
+["power","structure",3,"Social movements challenge existing power structures.","the way authority is organised within a system"],
+["network","effect",3,"The network effect makes platforms more valuable as they grow.","when a product becomes more valuable as more people use it"],
+["spending","cuts",3,"Spending cuts affected education and public services badly.","reductions made to how much money is spent"],
+["wage","gap",3,"The wage gap between industries has widened significantly.","the difference in pay between different groups"],
+["trust","deficit",3,"Political scandals can create a trust deficit with the public.","a lack of confidence people have in an institution"],
+
+// VERB + PREPOSITION (4)
+["focus","on",4,"Researchers focus on the causes of climate change.","to give most of your attention to something"],
+["result","in",4,"Poor nutrition can result in serious health problems.","to cause something to happen as an outcome"],
+["contribute","to",4,"Everyone can contribute to reducing household waste.","to help bring about or add to something"],
+["rely","on",4,"Many communities rely on rivers for drinking water.","to depend on something or someone"],
+["depend","on",4,"Success depends on consistent effort over time.","to need something in order to succeed or happen"],
+["account","for",4,"Transport accounts for a large share of carbon emissions.","to make up a certain part or explain a cause"],
+["adapt","to",4,"Animals must adapt to changes in their habitat.","to adjust to new conditions"],
+["agree","with",4,"Most scientists agree with the findings of the new report.","to share the same opinion as someone"],
+["aim","at",4,"The project aims at reducing poverty in rural areas.","to have a particular goal or target"],
+["apply","to",4,"These rules apply to all employees without exception.","to be relevant or relate to something"],
+["argue","for",4,"Many researchers argue for stricter environmental regulations.","to give reasons supporting something"],
+["arise","from",4,"Many problems arise from a lack of clear communication.","to happen as a result of something"],
+["associate","with",4,"Exercise is often associated with improved mental health.","to connect one thing with another in your mind"],
+["base","on",4,"The study is based on data collected from five countries.","to use something as the foundation for an idea"],
+["benefit","from",4,"Communities benefit from access to quality education.","to gain an advantage from something"],
+["collaborate","with",4,"Universities collaborate with businesses to fund research.","to work together with someone else"],
+["compare","with",4,"It is useful to compare the results with previous studies.","to examine how two things are similar or different"],
+["comply","with",4,"Companies must comply with environmental regulations.","to act according to a rule or request"],
+["concentrate","on",4,"The team concentrated on improving the product's design.","to direct your full effort towards something"],
+["conform","to",4,"Behaviour must conform to the norms of the community.","to behave according to accepted standards"],
+["deal","with",4,"Health workers must deal with increasing patient numbers.","to take action to manage a problem or situation"],
+["decide","on",4,"The committee decided on a new approach to the problem.","to make a final choice about something"],
+["derive","from",4,"Many modern words derive from Latin or Greek roots.","to originate or come from something"],
+["disagree","with",4,"Some experts disagree with the current government policy.","to hold a different opinion from someone"],
+["distinguish","between",4,"It is important to distinguish between fact and opinion.","to recognise the difference between two things"],
+["draw","from",4,"The author draws from a wide range of academic sources.","to use information or ideas from a source"],
+["engage","in",4,"Citizens should engage in the democratic process.","to take part in an activity"],
+["evolve","from",4,"Modern birds are believed to have evolved from dinosaurs.","to gradually develop out of something earlier"],
+["expand","on",4,"The researcher was invited to expand on her initial findings.","to give more detail about something already mentioned"],
+["experiment","with",4,"Scientists experiment with different materials to find solutions.","to try different things to see what works"],
+["expose","to",4,"Children should be exposed to a variety of learning styles.","to allow someone to experience something new"],
+["fight","for",4,"Activists fight for equal rights in all societies.","to work hard to achieve or defend something"],
+["incorporate","into",4,"New ideas should be incorporated into the existing plan.","to include something as part of a larger whole"],
+["integrate","with",4,"The new software integrates with existing platforms easily.","to combine smoothly with something else"],
+["interfere","with",4,"Stress can interfere with concentration and memory.","to get in the way of something"],
+["invest","in",4,"Governments must invest in renewable energy infrastructure.","to put money, time, or effort into something"],
+["lead","to",4,"Poor nutrition can lead to long-term health consequences.","to result in something happening"],
+["learn","from",4,"It is important to learn from past mistakes.","to gain understanding based on past experience"],
+["link","to",4,"Exercise is directly linked to improved mental wellbeing.","to be connected with something"],
+["move","towards",4,"Society is slowly moving towards greater gender equality.","to gradually change in a certain direction"],
+["object","to",4,"Many residents object to the construction of the new road.","to express disagreement or opposition to something"],
+["participate","in",4,"Students are expected to participate in class discussions.","to take part in an activity"],
+["prepare","for",4,"The company is preparing for a difficult trading period.","to get ready for something in advance"],
+["prevent","from",4,"Laws are designed to prevent businesses from polluting rivers.","to stop something from happening"],
+["react","to",4,"Consumers often react to price increases by buying less.","to respond to something that has happened"],
+["refer","to",4,"The author refers to several landmark studies in the text.","to mention or direct attention to something"],
+["reflect","on",4,"Students should take time to reflect on their learning.","to think carefully about something, often past experience"],
+["relate","to",4,"The new findings relate to earlier research on the topic.","to be connected or associated with something"],
+["respond","to",4,"The government was slow to respond to the crisis.","to reply or react to something"],
+["search","for",4,"Scientists continue to search for a cure for the disease.","to try to find something"],
+["shift","from",4,"The economy is shifting from manufacturing to services.","to change away from one state to another"],
+["struggle","with",4,"Many students struggle with time management during exams.","to find something difficult to manage"],
+["succeed","in",4,"With support, most students succeed in reaching their goals.","to achieve success at doing something"],
+["suffer","from",4,"Millions of people suffer from a lack of access to clean water.","to be badly affected by something"],
+["transition","to",4,"Many countries are transitioning to renewable energy.","to gradually change over to something new"],
+["turn","to",4,"Families often turn to social services in times of need.","to seek help or comfort from something"],
+["work","on",4,"Researchers are currently working on a vaccine for the virus.","to spend effort trying to complete or improve something"],
+["work","towards",4,"Organisations work towards a more sustainable future.","to make steady progress in achieving a goal"],
+["worry","about",4,"Citizens worry about rising living costs and job security.","to feel anxious about something"],
+["stem","from",4,"Many social problems stem from inequality and poverty.","to originate as a result of something"],
+["build","on",4,"The new plan builds on the success of the previous initiative.","to use previous success as a starting point for more"],
+["call","for",4,"The report calls for immediate action on climate change.","to publicly demand or request something"],
+["cater","to",4,"The programme caters to students with different learning needs.","to provide what a particular group needs"],
+["collaborate","on",4,"The two countries collaborate on joint research projects.","to work together on a specific project"],
+["compete","with",4,"Local firms struggle to compete with large corporations.","to try to win against another person or group"],
+["cope","with",4,"Students need strategies to cope with academic pressure.","to manage a difficult situation successfully"],
+["differ","from",4,"The second group's results differ from those of the first.","to be unlike something else"],
+["emerge","from",4,"Innovative ideas often emerge from collaborative environments.","to come out of or develop from a situation"],
+["report","on",4,"Journalists report on events from around the world.","to give information about an event"],
+["think","about",4,"Policymakers need to think about long-term consequences.","to consider something carefully"],
+["comment","on",4,"Experts were invited to comment on the proposed changes.","to give an opinion about something"],
+["cut down","on",4,"People are encouraged to cut down on their energy use.","to reduce the amount of something"],
+["give rise","to",4,"Rapid urbanisation gives rise to significant social problems.","to cause something to happen or exist"],
+["ask","for",4,"Students are encouraged to ask for feedback regularly.","to request something"],
+
+// FIXED ACADEMIC PHRASES (5)
+["take into","account",5,"When planning, it is important to take into account all risks.","to consider something when making a decision"],
+["make a","difference",5,"Small daily actions can make a difference to the environment.","to have a positive and noticeable effect"],
+["take for","granted",5,"We often take for granted access to clean drinking water.","to fail to appreciate something because it is always there"],
+["bear","in mind",5,"Bear in mind that results may vary between individuals.","to remember and consider something"],
+["bring about","change",5,"Education can bring about meaningful change in society.","to cause change to happen"],
+["call into","question",5,"The new data calls into question the original conclusion.","to cause doubt about something"],
+["come to","light",5,"New evidence came to light during the second investigation.","to become known or revealed"],
+["draw attention","to",5,"The report draws attention to gaps in current policy.","to make people notice something"],
+["fall short","of",5,"The programme fell short of its original targets.","to fail to reach an expected standard"],
+["give way","to",5,"Traditional industries have given way to technology-based ones.","to be replaced by something else"],
+["hold","true",5,"This principle holds true in most scientific contexts.","to remain correct or valid"],
+["keep pace","with",5,"Education must keep pace with rapid technological change.","to move forward at the same speed as something"],
+["lay the","groundwork",5,"Early research laid the groundwork for modern medicine.","to prepare the basic foundation for future work"],
+["leave room","for",5,"Any good plan should leave room for adjustment.","to allow the possibility of something later"],
+["pave the way","for",5,"The invention paved the way for modern communications.","to make it possible for something to happen next"],
+["put into","practice",5,"Theories become useful only when put into practice.","to actually start using an idea in real life"],
+["raise the","bar",5,"The new standard raises the bar for the entire industry.","to set a higher standard than before"],
+["run the","risk",5,"Without precautions, organisations run the risk of data breach.","to expose yourself to a possible danger"],
+["set the stage","for",5,"The agreement set the stage for further negotiations.","to create the right conditions for something to follow"],
+["stand in","contrast",5,"These findings stand in contrast to earlier research.","to be clearly different when compared"],
+["take a toll","on",5,"Long working hours can take a toll on mental health.","to cause damage or harm over time"],
+["take into","consideration",5,"These factors must be taken into consideration.","to think about something before deciding"],
+["turn the","tide",5,"Investment in education can turn the tide on poverty.","to reverse the direction events are heading"],
+["weigh","the evidence",5,"Judges must carefully weigh the evidence presented.","to carefully judge the value of proof presented"],
+["act as","a catalyst",5,"Innovation can act as a catalyst for economic recovery.","to be the cause that triggers change"],
+["at the expense","of",5,"Speed cannot come at the expense of accuracy.","causing harm or loss to something else"],
+["be subject","to",5,"All data collected is subject to strict privacy laws.","to be affected by or dependent on something"],
+["come at","a cost",5,"Rapid economic growth often comes at a cost to the environment.","to have a negative side effect along with a benefit"],
+["find common","ground",5,"The two parties were eventually able to find common ground.","to discover shared views between two sides"],
+["gain","momentum",5,"The campaign is gaining momentum across the country.","to increase in strength or popularity over time"],
+["go hand in","hand",5,"Economic development and education go hand in hand.","to be closely connected and occur together"],
+["have implications","for",5,"These results have significant implications for future policy.","to affect or have consequences for something"],
+["in light","of",5,"In light of new evidence, the guidelines were revised.","when considering new information"],
+["in the absence","of",5,"In the absence of data, we cannot draw firm conclusions.","when something is missing or not present"],
+["keep in","mind",5,"Keep in mind that not all findings can be generalised.","to remember something while doing something else"],
+["on the grounds","that",5,"The case was dismissed on the grounds that evidence was lacking.","for the stated reason that"],
+["open the door","to",5,"New research opens the door to more effective treatments.","to create a new possibility for something"],
+["remain to be","seen",5,"Whether the strategy will succeed remains to be seen.","to not yet be known for certain"],
+["serve as","a model",5,"Finland's education system serves as a model for other nations.","to be used as an example for others to follow"],
+["take precedence","over",5,"Safety must always take precedence over profit.","to be treated as more important than something else"],
+["with regard","to",5,"With regard to climate change, action is urgently needed.","concerning or in relation to"],
+["under","scrutiny",5,"The company's practices have come under public scrutiny.","being closely examined or questioned"],
+["at the heart","of",5,"Community trust is at the heart of effective governance.","at the central and most important part of"],
+["by the same","token",5,"By the same token, effort alone does not guarantee success.","for a similar reason as just mentioned"],
+["in terms","of",5,"In terms of economic output, the sector has grown considerably.","when considering a particular aspect"],
+["make the case","for",5,"The research makes the case for investment in early education.","to give strong reasons supporting something"],
+["on the basis","of",5,"Decisions should be made on the basis of solid evidence.","using something as the reason or foundation for a decision"],
+["point","to",5,"The data points to a clear link between poverty and poor health.","to indicate or suggest something"],
+["pose a","challenge",5,"Rising costs pose a challenge for small businesses.","to create a difficulty that must be overcome"],
+["prior","to",5,"Informed consent must be obtained prior to the experiment.","before a particular time or event"],
+["provide a","basis",5,"This research provides a basis for future investigations.","to give a foundation for further work or ideas"],
+["reach its","potential",5,"Students can only reach their potential with the right support.","to develop as fully as possible"],
+["subject to","change",5,"All schedules are subject to change without prior notice.","able to be altered later"],
+["throw light","on",5,"This discovery throws light on how early humans lived.","to help make something clearer or easier to understand"],
+["under the","circumstances",5,"The decision was reasonable under the circumstances.","considering the particular situation at hand"],
+["with the aim","of",5,"The project was launched with the aim of reducing unemployment.","with the purpose or goal of"],
+["as a","consequence",5,"As a consequence of the strike, services were disrupted.","as a direct result of something"],
+["shed light","on",5,"The report sheds light on the scale of urban poverty.","to make something easier to understand"],
+["give rise","to",5,"Globalisation gives rise to both opportunity and inequality.","to cause something to happen or exist"],
+["within the context","of",5,"Results must be understood within the context of the study.","when considered as part of a wider situation"],
+];
+
+const PASSAGES = [
+{
+  topic: "Environment & Climate",
+  text: "It is widely {0} that climate change is one of the most pressing challenges of the twenty-first century. Rising global temperatures have already begun to pose {1} to fragile ecosystems around the world. Many scientists argue that governments and individuals alike must take {2} to reduce global emissions. Individuals can also help by reducing their carbon {3} through simple everyday choices.",
+  blanks: [
+    {word1:"widely", answer:"accepted", cat:2},
+    {word1:"pose", answer:"a threat", cat:1},
+    {word1:"take", answer:"action", cat:1},
+    {word1:"carbon", answer:"footprint", cat:3}
+  ]
+},
+{
+  topic: "Healthcare & Medicine",
+  text: "Medical researchers have conducted extensive {0} into the long-term effects of poor diet on heart disease. The study produced compelling {1} that regular exercise reduces the risk of chronic illness. However, some medications can also have an adverse {2} on patients if not properly monitored. As a result, many governments continue to invest {3} preventative healthcare programmes to reduce long-term costs.",
+  blanks: [
+    {word1:"extensive", answer:"research", cat:0},
+    {word1:"compelling", answer:"evidence", cat:0},
+    {word1:"adverse", answer:"effect", cat:0},
+    {word1:"invest", answer:"in", cat:4}
+  ]
+},
+{
+  topic: "Technology & Education",
+  text: "Rapid technological {0} have transformed the way students learn both inside and outside the classroom. Modern classrooms increasingly rely {1} digital tools to support learning. These tools play a key role in skill {2} among young learners. Despite these benefits, schools must keep pace {3} constantly evolving technology to remain effective.",
+  blanks: [
+    {word1:"technological", answer:"advances", cat:0},
+    {word1:"rely", answer:"on", cat:4},
+    {word1:"skill", answer:"development", cat:3},
+    {word1:"keep pace", answer:"with", cat:5}
+  ]
+},
+{
+  topic: "Business & Economy",
+  text: "Many developing nations rely on tourism as a key driver of economic {0}. Companies that innovate quickly are often able to capture a larger market {1} than their competitors. Successful festivals and events can generate {2} for local businesses and communities. However, poor planning can sometimes result {3} significant financial losses for organisers.",
+  blanks: [
+    {word1:"economic", answer:"growth", cat:0},
+    {word1:"market", answer:"share", cat:3},
+    {word1:"generate", answer:"revenue", cat:1},
+    {word1:"result", answer:"in", cat:4}
+  ]
+},
+{
+  topic: "Urbanisation & Society",
+  text: "The rapid {0} of cities across Asia has placed enormous strain on housing and infrastructure. This is largely driven by continued population {1} in urban areas, as people migrate from rural regions in search of work. The widespread {2} of private vehicles has only added to traffic congestion in many major cities. Without careful planning, such rapid development can lead {3} severe overcrowding and a decline in quality of life.",
+  blanks: [
+    {word1:"rapid", answer:"expansion", cat:0},
+    {word1:"population", answer:"growth", cat:3},
+    {word1:"widespread", answer:"use", cat:0},
+    {word1:"lead", answer:"to", cat:4}
+  ]
+},
+{
+  topic: "Media & Communication",
+  text: "Social {0} platforms have fundamentally changed how people access news and information. Journalists often use these platforms to raise {1} about important social and political issues. Younger audiences in particular tend to focus {2} short-form video content rather than traditional articles. As a result, reliance on social media for news has become increasingly {3} among people under thirty.",
+  blanks: [
+    {word1:"social", answer:"media", cat:3},
+    {word1:"raise", answer:"awareness", cat:1},
+    {word1:"focus", answer:"on", cat:4},
+    {word1:"increasingly", answer:"common", cat:2}
+  ]
+},
+{
+  topic: "Workplace & Employment",
+  text: "Employees who feel valued at work tend to report higher levels of job {0}. Many companies now offer training programmes to help staff develop {1} relevant to a changing job market. Even so, many workers struggle to cope {2} the pressure of tight deadlines and long hours. Those who manage to balance their workload effectively are more likely to achieve {3} in their careers.",
+  blanks: [
+    {word1:"job", answer:"satisfaction", cat:3},
+    {word1:"develop", answer:"skills", cat:1},
+    {word1:"cope", answer:"with", cat:4},
+    {word1:"achieve", answer:"success", cat:1}
+  ]
+},
+{
+  topic: "Academic Research",
+  text: "Before publishing their findings, the team decided to conduct {0} to test their initial hypothesis. After several months of testing, the researchers were finally able to draw {1} about the results. Their findings were supported by strong empirical {2} collected from more than a thousand participants. The final report was written entirely on the basis {3} verified data rather than assumption.",
+  blanks: [
+    {word1:"conduct", answer:"an experiment", cat:1},
+    {word1:"draw", answer:"a conclusion", cat:1},
+    {word1:"empirical", answer:"evidence", cat:0},
+    {word1:"on the basis", answer:"of", cat:5}
+  ]
+},
+{
+  topic: "Energy & Sustainability",
+  text: "Governments around the world are increasingly investing in renewable {0} as a way to reduce dependence on fossil fuels. Unlike solar and wind power, fossil fuels are finite {1} that will eventually run out. Switching to renewable sources can also help households reduce {2} over the long term. However, many developing countries still depend {3} imported fuel to meet their energy needs.",
+  blanks: [
+    {word1:"renewable", answer:"energy", cat:0},
+    {word1:"finite", answer:"resources", cat:0},
+    {word1:"reduce", answer:"costs", cat:1},
+    {word1:"depend", answer:"on", cat:4}
+  ]
+},
+{
+  topic: "Global Responsibility",
+  text: "Climate change has become a truly global {0}, affecting every country regardless of wealth or geography. While large corporations often bear significant {1} for carbon emissions, individual choices also matter. Environmental groups continue to call {2} stronger international agreements to limit global warming. Ultimately, meaningful progress will only be possible if governments, businesses, and individuals all take {3} together.",
+  blanks: [
+    {word1:"global", answer:"phenomenon", cat:0},
+    {word1:"bear", answer:"responsibility", cat:1},
+    {word1:"call", answer:"for", cat:4},
+    {word1:"take", answer:"action", cat:1}
+  ]
+},
+];
+
+// ── GLOBALS ──────────────────────────────────
+let currentMode = 'list';
+let fcIndex = 0, fcData = [], fcFlipped = false;
+let qData = [], qIndex = 0, qScore = 0, qWrong = 0, qStreak = 0, qBestStreak = 0, qAnswered = false;
+let mqData = [], mqIndex = 0, mqScore = 0, mqWrong = 0, mqStreak = 0, mqBestStreak = 0, mqAnswered = false;
+let pgIdx = 0, pgMode = 'drag', pgAnswers = [], pgOptions = [], pgBank = [], pgChecked = false;
+
+document.getElementById('total-count').textContent = DATA.length + ' collocations';
+
+// ── UTILITIES ────────────────────────────────
+function shuffle(arr){ return [...arr].sort(()=>Math.random()-.5); }
+function byCategory(cat){ return cat === -1 ? DATA : DATA.filter(d=>d[2]===cat); }
+function catOptions(selected){
+  let s = `<option value="-1" ${selected===-1?'selected':''}>All Categories (${DATA.length})</option>`;
+  CATS.forEach((c,i)=>{
+    const n = DATA.filter(d=>d[2]===i).length;
+    s += `<option value="${i}" ${selected===i?'selected':''}>${c} (${n})</option>`;
+  });
+  return s;
+}
+
+// ── MODE SWITCH ──────────────────────────────
+function switchMode(mode){
+  currentMode = mode;
+  const order = ['list','flash','quiz','mquiz','passage'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',order[i]===mode));
+  order.forEach(m=>document.getElementById('mode-'+m).style.display=m===mode?'':'none');
+  if(mode==='list') renderList(-1,'');
+  if(mode==='flash') initFlash(-1);
+  if(mode==='quiz') initQuiz(-1);
+  if(mode==='mquiz') initMQuiz(-1);
+  if(mode==='passage') initPassage(0);
+}
+
+// ── LIST MODE ────────────────────────────────
+function renderList(cat, q){
+  const pool = byCategory(cat).filter(d=>{
+    const txt = (d[0]+' '+d[1]).toLowerCase();
+    return txt.includes(q.toLowerCase());
+  });
+  const byCat = {};
+  pool.forEach(d=>{ (byCat[d[2]]=byCat[d[2]]||[]).push(d); });
+
+  let h = `<div class="controls">
+    <label>Category:</label>
+    <select onchange="renderList(parseInt(this.value), document.getElementById('ls-search').value)">${catOptions(cat)}</select>
+    <input type="text" id="ls-search" placeholder="Search collocations…" value="${q}" oninput="renderList(parseInt(document.querySelector('#mode-list select').value), this.value)" style="max-width:280px">
+    <span class="badge">${pool.length} results</span>
+  </div>`;
+
+  if(!pool.length){ h += `<div class="no-results">No collocations found. Try a different search.</div>`; }
+  else {
+    const cats = cat === -1 ? Object.keys(byCat).map(Number) : [cat];
+    cats.forEach(ci=>{
+      h += `<div class="cat-group"><div class="cat-label">${CATS[ci]}</div><div class="grid">`;
+      (byCat[ci]||[]).forEach(d=>{
+        h += `<div class="col-card">
+          <div class="col-word"><em>${d[0]}</em> ${d[1]}</div>
+          <div class="col-ex">${d[3]}</div>
+        </div>`;
+      });
+      h += `</div></div>`;
+    });
+  }
+  document.getElementById('mode-list').innerHTML = h;
+}
+
+// ── FLASHCARD MODE ───────────────────────────
+function initFlash(cat){
+  fcData = shuffle(byCategory(cat));
+  fcIndex = 0; fcFlipped = false;
+  renderFlash(cat);
+}
+
+function renderFlash(cat){
+  const d = fcData[fcIndex];
+  const el = document.getElementById('mode-flash');
+  el.innerHTML = `<div class="controls">
+    <label>Category:</label>
+    <select onchange="initFlash(parseInt(this.value))">${catOptions(cat)}</select>
+  </div>
+  <div class="fc-wrap">
+    <div class="fc-progress">${fcIndex+1} / ${fcData.length}</div>
+    <div class="fc-card ${fcFlipped?'flipped':''}" id="fc-card" onclick="flipCard()">
+      <div class="fc-front">
+        <div class="word"><em>${d[0]}</em> ${d[1]}</div>
+        <div class="sub">Tap to see an example sentence</div>
+      </div>
+      <div class="fc-back">
+        <div class="fc-tag">${CATS[d[2]]}</div>
+        <div class="ex">"${d[3]}"</div>
+      </div>
+      <div class="fc-hint">${fcFlipped?'tap to flip back':'tap to flip'}</div>
+    </div>
+    <div class="fc-btns">
+      <button class="btn btn-secondary" onclick="fcNav(-1)">← Prev</button>
+      <button class="btn btn-secondary" onclick="initFlash(parseInt(document.querySelector('#mode-flash select').value))">🔀 Shuffle</button>
+      <button class="btn btn-primary" onclick="fcNav(1)">Next →</button>
+    </div>
+  </div>`;
+}
+
+function flipCard(){
+  fcFlipped = !fcFlipped;
+  const card = document.getElementById('fc-card');
+  card.classList.toggle('flipped', fcFlipped);
+  card.querySelector('.fc-hint').textContent = fcFlipped ? 'tap to flip back' : 'tap to flip';
+}
+
+function fcNav(dir){
+  fcIndex = (fcIndex + dir + fcData.length) % fcData.length;
+  fcFlipped = false;
+  renderFlash(parseInt(document.querySelector('#mode-flash select').value));
+}
+
+// ── QUIZ MODE ────────────────────────────────
+function initQuiz(cat){
+  qData = shuffle(byCategory(cat));
+  qIndex = 0; qScore = 0; qWrong = 0; qStreak = 0; qBestStreak = 0; qAnswered = false;
+  renderQuiz(cat);
+}
+
+function renderQuiz(cat){
+  if(qIndex >= qData.length){ renderQuizEnd(cat); return; }
+  const d = qData[qIndex];
+  const sameCat = DATA.filter(x=>x[2]===d[2] && x[1]!==d[1]);
+  const wrongs = shuffle(sameCat).slice(0,3).map(x=>x[1]);
+  while(wrongs.length < 3){ wrongs.push(['growth','change','factor','impact','rate'].find(w=>w!==d[1]&&!wrongs.includes(w))||'system'); }
+  const opts = shuffle([d[1], ...wrongs.slice(0,3)]);
+  const streakMsg = qStreak >= 3 ? `🔥 ${qStreak} in a row! Keep it up!` : qStreak === 2 ? `✨ 2 correct in a row!` : '';
+
+  document.getElementById('mode-quiz').innerHTML = `
+    <div class="controls">
+      <label>Category:</label>
+      <select onchange="initQuiz(parseInt(this.value))">${catOptions(cat)}</select>
+    </div>
+    <div class="quiz-stats">
+      <div class="stat"><div class="stat-val">${qIndex}</div><div class="stat-lbl">Done</div></div>
+      <div class="stat"><div class="stat-val correct-col">${qScore}</div><div class="stat-lbl">Correct</div></div>
+      <div class="stat"><div class="stat-val wrong-col">${qWrong}</div><div class="stat-lbl">Wrong</div></div>
+      <div class="stat"><div class="stat-val streak">${qStreak}</div><div class="stat-lbl">Streak 🔥</div></div>
+    </div>
+    <div class="streak-msg">${streakMsg}</div>
+    <div class="q-card">
+      <div class="q-num">Question ${qIndex+1} of ${qData.length}</div>
+      <div class="q-text">Complete the collocation: <span>${d[0]}</span> ___</div>
+      <div class="q-cat">${CATS[d[2]]}</div>
+      <div class="options">
+        ${opts.map(o=>`<button class="opt" onclick="answerQuiz('${o}','${d[1]}',this)">${o}</button>`).join('')}
+      </div>
+      <div class="feedback" id="feedback"></div>
+      <button class="btn btn-primary next-btn" id="next-btn" style="display:none" onclick="nextQuiz(parseInt(document.querySelector('#mode-quiz select').value))">Next →</button>
+    </div>`;
+}
+
+function answerQuiz(chosen, correct, btn){
+  if(qAnswered) return;
+  qAnswered = true;
+  const d = qData[qIndex];
+  const isCorrect = chosen === correct;
+  if(isCorrect){ qScore++; qStreak++; if(qStreak>qBestStreak) qBestStreak=qStreak; }
+  else { qWrong++; qStreak=0; }
+
+  document.querySelectorAll('#mode-quiz .opt').forEach(b=>{
+    b.disabled = true;
+    if(b.textContent === correct) b.classList.add('correct');
+    else if(b === btn && !isCorrect) b.classList.add('wrong');
+  });
+
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback show ' + (isCorrect ? 'fc-correct' : 'fc-wrong');
+  fb.innerHTML = isCorrect
+    ? `<strong>✓ Correct! "${d[0]} ${d[1]}"</strong><em>${d[3]}</em>`
+    : `<strong>✗ The correct answer is "${correct}"</strong>The full collocation is: <strong>${d[0]} ${correct}</strong><br><em>${d[3]}</em>`;
+
+  document.getElementById('next-btn').style.display = 'block';
+}
+
+function nextQuiz(cat){
+  qIndex++; qAnswered = false;
+  renderQuiz(cat);
+}
+
+function renderQuizEnd(cat){
+  const pct = Math.round(qScore/qData.length*100);
+  const msg = pct===100?'Perfect score! Outstanding! 🏆':pct>=80?'Excellent work! 🌟':pct>=60?'Good effort! Keep practising 💪':'Keep going — you will get there! 📖';
+  document.getElementById('mode-quiz').innerHTML = `
+    <div class="controls">
+      <label>Category:</label>
+      <select onchange="initQuiz(parseInt(this.value))">${catOptions(cat)}</select>
+    </div>
+    <div class="end-screen">
+      <h2>Session Complete!</h2>
+      <div class="final">${qScore}/${qData.length}</div>
+      <div class="final-sub">${pct}% correct · Best streak: ${qBestStreak} 🔥</div>
+      <p style="margin-bottom:20px;font-size:15px;color:#374151">${msg}</p>
+      <button class="btn btn-primary" onclick="initQuiz(parseInt(document.querySelector('#mode-quiz select').value))">Try Again</button>
+      &nbsp;
+      <button class="btn btn-secondary" onclick="switchMode('list')">Browse List</button>
+    </div>`;
+}
+
+// ── MEANING QUIZ MODE ─────────────────────────
+function initMQuiz(cat){
+  mqData = shuffle(byCategory(cat));
+  mqIndex = 0; mqScore = 0; mqWrong = 0; mqStreak = 0; mqBestStreak = 0; mqAnswered = false;
+  renderMQuiz(cat);
+}
+
+function renderMQuiz(cat){
+  if(mqIndex >= mqData.length){ renderMQuizEnd(cat); return; }
+  const d = mqData[mqIndex];
+  const sameCat = DATA.filter(x=>x[2]===d[2] && x[1]!==d[1]);
+  const wrongs = shuffle(sameCat).slice(0,3).map(x=>x[1]);
+  while(wrongs.length < 3){ wrongs.push(['growth','change','factor','impact','rate'].find(w=>w!==d[1]&&!wrongs.includes(w))||'system'); }
+  const opts = shuffle([d[1], ...wrongs.slice(0,3)]);
+  const streakMsg = mqStreak >= 3 ? `🔥 ${mqStreak} in a row! Keep it up!` : mqStreak === 2 ? `✨ 2 correct in a row!` : '';
+
+  document.getElementById('mode-mquiz').innerHTML = `
+    <div class="controls">
+      <label>Category:</label>
+      <select onchange="initMQuiz(parseInt(this.value))">${catOptions(cat)}</select>
+    </div>
+    <div class="quiz-stats">
+      <div class="stat"><div class="stat-val">${mqIndex}</div><div class="stat-lbl">Done</div></div>
+      <div class="stat"><div class="stat-val correct-col">${mqScore}</div><div class="stat-lbl">Correct</div></div>
+      <div class="stat"><div class="stat-val wrong-col">${mqWrong}</div><div class="stat-lbl">Wrong</div></div>
+      <div class="stat"><div class="stat-val streak">${mqStreak}</div><div class="stat-lbl">Streak 🔥</div></div>
+    </div>
+    <div class="streak-msg">${streakMsg}</div>
+    <div class="q-card">
+      <div class="q-num">Question ${mqIndex+1} of ${mqData.length}</div>
+      <div class="q-text">Which word collocates with "<span>${d[0]}</span>" to mean:</div>
+      <div class="q-meaning">"${d[4]}"</div>
+      <div class="q-cat">${CATS[d[2]]}</div>
+      <div class="options">
+        ${opts.map(o=>`<button class="opt" onclick="answerMQuiz('${o}','${d[1]}',this)">${o}</button>`).join('')}
+      </div>
+      <div class="feedback" id="mq-feedback"></div>
+      <button class="btn btn-primary next-btn" id="mq-next-btn" style="display:none" onclick="nextMQuiz(parseInt(document.querySelector('#mode-mquiz select').value))">Next →</button>
+    </div>`;
+}
+
+function answerMQuiz(chosen, correct, btn){
+  if(mqAnswered) return;
+  mqAnswered = true;
+  const d = mqData[mqIndex];
+  const isCorrect = chosen === correct;
+  if(isCorrect){ mqScore++; mqStreak++; if(mqStreak>mqBestStreak) mqBestStreak=mqStreak; }
+  else { mqWrong++; mqStreak=0; }
+
+  document.querySelectorAll('#mode-mquiz .opt').forEach(b=>{
+    b.disabled = true;
+    if(b.textContent === correct) b.classList.add('correct');
+    else if(b === btn && !isCorrect) b.classList.add('wrong');
+  });
+
+  const fb = document.getElementById('mq-feedback');
+  fb.className = 'feedback show ' + (isCorrect ? 'fc-correct' : 'fc-wrong');
+  fb.innerHTML = isCorrect
+    ? `<strong>✓ Correct! "${d[0]} ${d[1]}" means "${d[4]}"</strong><em>${d[3]}</em>`
+    : `<strong>✗ The correct answer is "${correct}"</strong>"${d[0]} ${correct}" means "${d[4]}"<br><em>${d[3]}</em>`;
+
+  document.getElementById('mq-next-btn').style.display = 'block';
+}
+
+function nextMQuiz(cat){
+  mqIndex++; mqAnswered = false;
+  renderMQuiz(cat);
+}
+
+function renderMQuizEnd(cat){
+  const pct = Math.round(mqScore/mqData.length*100);
+  const msg = pct===100?'Perfect score! Outstanding! 🏆':pct>=80?'Excellent work! 🌟':pct>=60?'Good effort! Keep practising 💪':'Keep going — you will get there! 📖';
+  document.getElementById('mode-mquiz').innerHTML = `
+    <div class="controls">
+      <label>Category:</label>
+      <select onchange="initMQuiz(parseInt(this.value))">${catOptions(cat)}</select>
+    </div>
+    <div class="end-screen">
+      <h2>Session Complete!</h2>
+      <div class="final">${mqScore}/${mqData.length}</div>
+      <div class="final-sub">${pct}% correct · Best streak: ${mqBestStreak} 🔥</div>
+      <p style="margin-bottom:20px;font-size:15px;color:#374151">${msg}</p>
+      <button class="btn btn-primary" onclick="initMQuiz(parseInt(document.querySelector('#mode-mquiz select').value))">Try Again</button>
+      &nbsp;
+      <button class="btn btn-secondary" onclick="switchMode('list')">Browse List</button>
+    </div>`;
+}
+
+// ── PASSAGE FIB MODE ──────────────────────────
+function blankMeaning(b){
+  const found = DATA.find(d=>d[2]===b.cat && d[0]===b.word1 && d[1]===b.answer);
+  return found ? found[4] : '';
+}
+
+function initPassage(idx){
+  pgIdx = idx;
+  pgChecked = false;
+  const p = PASSAGES[pgIdx];
+  pgAnswers = new Array(p.blanks.length).fill(null);
+  pgOptions = p.blanks.map(b=>{
+    const sameCat = DATA.filter(x=>x[2]===b.cat && x[1]!==b.answer);
+    const wrongs = shuffle(sameCat).slice(0,3).map(x=>x[1]);
+    return shuffle([b.answer, ...wrongs]);
+  });
+  pgBank = shuffle(p.blanks.map((b,i)=>({word:b.answer, idx:i, used:false})));
+  renderPassage();
+}
+
+function passageSelector(){
+  let s = '';
+  PASSAGES.forEach((p,i)=>{ s += `<option value="${i}" ${i===pgIdx?'selected':''}>${i+1}. ${p.topic}</option>`; });
+  return s;
+}
+
+function setPassageMode(m){
+  pgMode = m;
+  initPassage(pgIdx);
+}
+
+function dragStart(e, word){
+  e.dataTransfer.setData('text/plain', word);
+}
+
+function dropOntoBlank(e, i){
+  e.preventDefault();
+  if(pgChecked) return;
+  const word = e.dataTransfer.getData('text/plain');
+  if(!word) return;
+  if(pgAnswers[i]){
+    const prev = pgBank.find(c=>c.word===pgAnswers[i] && c.used);
+    if(prev) prev.used = false;
+  }
+  const chip = pgBank.find(c=>c.word===word && !c.used);
+  if(chip) chip.used = true;
+  pgAnswers[i] = word;
+  renderPassage();
+}
+
+function clearBlank(i){
+  if(pgChecked || !pgAnswers[i]) return;
+  const chip = pgBank.find(c=>c.word===pgAnswers[i] && c.used);
+  if(chip) chip.used = false;
+  pgAnswers[i] = null;
+  renderPassage();
+}
+
+function setPassageAnswer(i, val){
+  pgAnswers[i] = val || null;
+}
+
+function checkPassage(){
+  pgChecked = true;
+  renderPassage();
+}
+
+function renderPassage(){
+  const p = PASSAGES[pgIdx];
+
+  const blanksHtml = p.blanks.map((b,i)=>{
+    let cls = 'blank-drop';
+    if(pgChecked){
+      cls += (pgAnswers[i]===b.answer) ? ' correct' : ' wrong';
+    } else if(pgAnswers[i]){
+      cls += ' filled';
+    }
+    if(pgMode === 'drag'){
+      const label = pgAnswers[i] || '⋯';
+      const clickHandler = pgChecked ? '' : `onclick="clearBlank(${i})"`;
+      return `<span class="${cls}" data-i="${i}" ondrop="dropOntoBlank(event,${i})" ondragover="event.preventDefault()" ${clickHandler}>${label}</span>`;
+    } else {
+      const opts = pgOptions[i].map(o=>`<option value="${o}" ${pgAnswers[i]===o?'selected':''}>${o}</option>`).join('');
+      const selCls = pgChecked ? (pgAnswers[i]===b.answer?'correct':'wrong') : '';
+      return `<select class="blank-select ${selCls}" ${pgChecked?'disabled':''} onchange="setPassageAnswer(${i},this.value)"><option value="">choose…</option>${opts}</select>`;
+    }
+  });
+
+  let idx2 = 0;
+  const text = p.text.replace(/\{(\d)\}/g, () => blanksHtml[idx2++]);
+
+  let bankHtml = '';
+  if(pgMode === 'drag'){
+    bankHtml = `<div class="word-bank">` + pgBank.map(c=>
+      `<span class="word-chip ${c.used?'used':''}" draggable="${!c.used}" ondragstart="dragStart(event,'${c.word.replace(/'/g,"\\'")}')">${c.word}</span>`
+    ).join('') + `</div>`;
+  }
+
+  let resultHtml = '';
+  if(pgChecked){
+    const correctCount = p.blanks.filter((b,i)=>pgAnswers[i]===b.answer).length;
+    resultHtml = `<div class="passage-result"><strong>${correctCount} / ${p.blanks.length} correct</strong>`;
+    p.blanks.forEach((b,i)=>{
+      if(pgAnswers[i] !== b.answer){
+        resultHtml += `<div class="passage-result-item">✗ Blank ${i+1}: correct answer is "<strong>${b.word1} ${b.answer}</strong>" — ${blankMeaning(b)}</div>`;
+      }
+    });
+    resultHtml += `</div>`;
+  }
+
+  const hint = pgMode==='drag'
+    ? 'Drag each word from the bank below into the correct blank.'
+    : 'Choose the correct word for each blank from the dropdown.';
+
+  document.getElementById('mode-passage').innerHTML = `
+    <div class="passage-controls">
+      <label>Passage:</label>
+      <select onchange="initPassage(parseInt(this.value))">${passageSelector()}</select>
+      <button class="btn btn-secondary" onclick="initPassage(Math.floor(Math.random()*PASSAGES.length))">🔀 Shuffle</button>
+      <div class="toggle-group">
+        <button class="toggle-btn ${pgMode==='drag'?'active':''}" onclick="setPassageMode('drag')">Drag &amp; Drop</button>
+        <button class="toggle-btn ${pgMode==='dropdown'?'active':''}" onclick="setPassageMode('dropdown')">Dropdown</button>
+      </div>
+    </div>
+    <div class="passage-topic-tag">${p.topic}</div>
+    <span class="passage-hint">${hint}</span>
+    <div class="passage-card">${text}</div>
+    ${bankHtml}
+    ${resultHtml}
+    <div style="margin-top:16px;display:flex;gap:10px">
+      ${pgChecked
+        ? `<button class="btn btn-primary" onclick="initPassage(pgIdx)">Try Again</button><button class="btn btn-secondary" onclick="initPassage((pgIdx+1)%PASSAGES.length)">Next Passage →</button>`
+        : `<button class="btn btn-success" onclick="checkPassage()">Check Answers</button>`
+      }
+    </div>`;
+}
+
+// ── INIT ─────────────────────────────────────
+renderList(-1,'');
+</script>
+</body>
+</html>
