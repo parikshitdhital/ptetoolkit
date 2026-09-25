@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PTE – Summarize Written Text</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  /* page-specific styles, layered on top of the shared site stylesheet */
+  main { max-width: 900px; }
+
+  .nav-row { display:flex; gap:8px; align-items:center; margin-bottom:18px; flex-wrap:wrap; }
+
+  .btn2 { padding:7px 16px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; border:1.5px solid #d1d5db; background:#fff; color:#374151; }
+  .btn2.active { background:#1e2a78; color:#fff; border-color:#1e2a78; }
+  .btn2:hover:not(.active) { background:#f3f4f6; }
+
+  .method-box { background:#f0f2ff; border:1px solid #c7d2fe; border-radius:10px; padding:14px 16px; font-size:12.5px; line-height:1.7; color:#333; margin-bottom:18px; }
+  .method-box b { color:#1e2a78; }
+
+  #passage-box { background:#fff; border:2px solid #e5e7eb; border-radius:12px; padding:18px 20px; font-size:14px; line-height:1.9; color:#1a1a2e; margin-bottom:14px; min-height:120px; }
+
+  .passage-controls { display:flex; gap:10px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+
+  select.psel { padding:7px 10px; border:1.5px solid #d1d5db; border-radius:8px; font-size:13px; background:#fff; }
+
+  #answer-box { width:100%; min-height:120px; padding:14px; font-size:14px; line-height:1.8; border:2px solid #ccc; border-radius:10px; resize:vertical; font-family:system-ui,sans-serif; box-sizing:border-box; }
+
+  .count-row { display:flex; align-items:center; gap:12px; margin-top:10px; flex-wrap:wrap; }
+
+  .count-badge { font-size:13px; font-weight:700; padding:5px 14px; border-radius:20px; }
+  .count-badge.ideal { background:#dcfce7; color:#166534; }
+  .count-badge.ok { background:#fef3c7; color:#92400e; }
+  .count-badge.bad { background:#fee2e2; color:#991b1b; }
+
+  .count-label { font-size:12px; color:#6b7280; }
+
+  .btn-row { display:flex; gap:10px; margin-top:14px; align-items:center; }
+
+  .btn-primary { background:#1e2a78; color:#fff; border:none; padding:8px 20px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; }
+  .btn-primary:hover { background:#16205e; }
+  .btn-secondary { background:#fff; border:1.5px solid #d1d5db; padding:8px 20px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; color:#374151; }
+  .btn-secondary:hover { background:#f3f4f6; }
+
+  #save-msg { font-size:13px; color:#16a34a; font-weight:600; }
+
+  /* teacher panel */
+  .teacher-panel { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:20px; margin-top:20px; }
+  .teacher-panel h3 { font-size:14px; margin-bottom:10px; color:#1a1a2e; }
+  .passage-list-item { display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid #eee; }
+  .passage-list-item p { flex:1; font-size:12.5px; color:#444; line-height:1.6; }
+  .del-btn { background:none; border:none; color:#dc2626; cursor:pointer; font-size:16px; padding:2px 6px; }
+  textarea.padd { width:100%; min-height:100px; padding:10px; border:1px solid #ccc; border-radius:8px; font-size:13px; font-family:system-ui,sans-serif; box-sizing:border-box; }
+  input.padd-title { width:100%; padding:8px 10px; border:1px solid #ccc; border-radius:8px; font-size:13px; margin-bottom:6px; box-sizing:border-box; }
+
+  .saved-entry { background:#f9f9f9; border:1px solid #ddd; border-radius:8px; padding:10px 12px; margin-bottom:8px; font-size:13px; line-height:1.7; }
+  .saved-meta { font-size:11px; color:#888; margin-bottom:4px; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="inner">
+    <h1>PTE – Summarize Written Text</h1>
+    <a class="back-link" href="index.html">← Back to Toolkit</a>
+  </div>
+</header>
+
+<main>
+
+  <div class="nav-row">
+    <button class="btn2 active" id="nav-student" onclick="switchView('student')">Student</button>
+    <span id="teacher-login-area">
+      <input type="password" id="pw-input" placeholder="Teacher password" style="padding:6px 10px;border:1px solid #bbb;border-radius:8px;font-size:13px;width:150px">
+      <button class="btn2" onclick="login()">Login</button>
+    </span>
+    <button class="btn2" id="nav-teacher" style="display:none" onclick="switchView('teacher')">Teacher</button>
+  </div>
+
+  <div class="method-box">
+    <b>The Method:</b>
+    1) Pick one full, independent sentence from the passage and write it exactly as it is.
+    2) Replace its ending full stop with a comma.
+    3) Add a joining word (and / but / while / whereas).
+    4) Add another sentence from the passage, with its first letter lowercased.
+    Repeat if needed until you're between 50–70 words. Capitalise the very first letter, end with one full stop, and never use a period anywhere in the middle.
+  </div>
+
+  <div id="student-view">
+
+    <div class="passage-controls">
+      <label style="font-size:13px;font-weight:600;color:#374151">Passage:</label>
+      <select class="psel" id="passage-select" onchange="loadPassage(parseInt(this.value))"></select>
+      <button class="btn-secondary" onclick="shufflePassage()">🔀 Shuffle</button>
+    </div>
+
+    <div id="passage-box"></div>
+
+    <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Your Summary (one sentence)</label>
+    <textarea id="answer-box" placeholder="Write your one-sentence summary here…" oninput="updateCount()"></textarea>
+
+    <div class="count-row">
+      <span class="count-badge" id="count-badge">0 words</span>
+      <span class="count-label" id="count-label"></span>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary" onclick="saveResponse()">Save</button>
+      <button class="btn-secondary" onclick="clearAnswer()">Clear</button>
+      <span id="save-msg"></span>
+    </div>
+
+    <div id="saved-section" style="margin-top:28px">
+      <h3 style="font-size:14px;margin-bottom:10px;color:#1a1a2e">Saved Responses</h3>
+      <div id="saved-list"></div>
+      <p id="no-saves" style="color:#aaa;font-size:13px">No saved responses yet.</p>
+    </div>
+
+  </div>
+
+  <div id="teacher-view" style="display:none">
+    <div class="teacher-panel">
+      <h3>Manage Passages</h3>
+      <div id="passage-manage-list"></div>
+      <div style="margin-top:14px">
+        <input class="padd-title" id="new-passage-title" placeholder="Passage title (optional, e.g. 'Climate Change')">
+        <textarea class="padd" id="new-passage-text" placeholder="Paste the full passage text here…"></textarea>
+        <button class="btn-primary" style="margin-top:8px" onclick="addPassage()">Add Passage</button>
+      </div>
+      <p style="font-size:11.5px;color:#9ca3af;margin-top:10px">Note: passages you add here are saved only in this browser. The built-in passages are always available to every student.</p>
+    </div>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  PTE Practice Toolkit — built for classroom use
+</footer>
+
+<script>
+/* ── built-in starter passages ── */
+const DEFAULT_PASSAGES = [
+{
+  title: "Urban Green Spaces",
+  text: "Urban green spaces, such as parks and community gardens, play an increasingly important role in modern city planning. Research has consistently shown that access to green areas improves both the physical and mental health of city residents, reducing stress and encouraging physical activity. In addition to health benefits, green spaces help mitigate the urban heat island effect by providing shade and cooling the surrounding air through evapotranspiration. They also support biodiversity by offering habitats for birds, insects, and small mammals within otherwise heavily built environments. Despite these advantages, many rapidly growing cities struggle to allocate sufficient land for green spaces due to competing demands for housing and commercial development. Urban planners increasingly argue that integrating green infrastructure from the earliest stages of city design, rather than treating it as an afterthought, is essential for building healthier and more sustainable urban environments in the future."
+},
+{
+  title: "The Rise of Remote Work",
+  text: "The shift toward remote work, accelerated by the global pandemic, has fundamentally changed how many organisations operate. Employees report greater flexibility and improved work-life balance, as commuting time is eliminated and schedules can often be adjusted to suit personal circumstances. However, remote work also presents challenges, including feelings of isolation, difficulty separating professional and personal life, and reduced spontaneous collaboration between colleagues. Employers have had to invest in new technologies and management practices to maintain productivity and team cohesion across distributed workforces. Some companies have adopted hybrid models, combining in-office and remote work, in an attempt to capture the benefits of both approaches. As this trend continues to evolve, businesses and employees alike are still learning how to balance flexibility with the human need for connection and structure in professional life."
+},
+{
+  title: "Ocean Plastic Pollution",
+  text: "Plastic pollution in the world's oceans has become one of the most pressing environmental issues of the twenty-first century. Millions of tonnes of plastic waste enter marine ecosystems every year, much of it originating from land-based sources such as improperly managed waste and single-use packaging. Once in the ocean, plastic breaks down into smaller fragments known as microplastics, which are ingested by marine organisms and can eventually enter the human food chain through seafood consumption. This pollution not only threatens marine biodiversity but also damages fishing and tourism industries that depend on healthy coastal ecosystems. International efforts to address the crisis have included bans on single-use plastics, improved waste management infrastructure, and global agreements aimed at reducing plastic production. Nevertheless, experts agree that significant, coordinated action across governments, industries, and consumers will be necessary to meaningfully reverse the damage already done to ocean ecosystems."
+},
+{
+  title: "Artificial Intelligence in Healthcare",
+  text: "Artificial intelligence is increasingly being integrated into healthcare systems around the world, offering the potential to improve diagnosis, treatment, and patient outcomes. Machine learning algorithms can analyse vast amounts of medical data, including imaging scans and patient records, often identifying patterns that may be missed by human clinicians. This technology has already shown promise in areas such as early cancer detection, where AI systems can flag suspicious anomalies for further review by specialists. However, the adoption of AI in healthcare also raises important ethical and practical concerns, including questions about data privacy, algorithmic bias, and the appropriate level of human oversight required. Many healthcare professionals emphasise that AI should be viewed as a tool to support, rather than replace, clinical judgement. As regulatory frameworks continue to develop, the successful integration of AI into healthcare will likely depend on building trust between patients, clinicians, and the technology itself."
+},
+{
+  title: "The Decline of Bee Populations",
+  text: "Bee populations around the world have experienced significant declines over the past two decades, raising serious concerns among scientists and farmers alike. Bees play a critical role in pollinating a wide variety of crops, and their decline threatens both global food security and the stability of natural ecosystems. Several factors have been identified as contributing causes, including habitat loss due to agricultural expansion, exposure to pesticides, and the spread of parasites and diseases among bee colonies. Climate change has further compounded these pressures by altering flowering patterns and disrupting the timing of pollination cycles. In response, some governments have introduced restrictions on certain pesticides, while conservation groups have promoted the planting of pollinator-friendly gardens and wildflower habitats. Despite these efforts, experts caution that a coordinated, long-term strategy involving policy change, scientific research, and public awareness will be essential to reverse the ongoing decline in bee populations."
+},
+];
+
+let passages = [];
+let currentIdx = 0;
+let teacherPasswordOK = false;
+const TEACHER_PASSWORD = "tutor123";
+
+/* ── storage ── */
+function loadCustomPassages() {
+  try {
+    const raw = localStorage.getItem("swt_custom_passages");
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+
+function saveCustomPassages(list) {
+  try { localStorage.setItem("swt_custom_passages", JSON.stringify(list)); } catch (e) {}
+}
+
+function rebuildPassages() {
+  passages = [...DEFAULT_PASSAGES, ...loadCustomPassages()];
+}
+
+/* ── nav ── */
+function switchView(view) {
+  document.getElementById("student-view").style.display = view === "student" ? "" : "none";
+  document.getElementById("teacher-view").style.display = view === "teacher" ? "" : "none";
+  document.getElementById("nav-student").classList.toggle("active", view === "student");
+  document.getElementById("nav-teacher").classList.toggle("active", view === "teacher");
+  if (view === "teacher") renderTeacherPanel();
+}
+
+function login() {
+  const val = document.getElementById("pw-input").value;
+  if (val === TEACHER_PASSWORD) {
+    teacherPasswordOK = true;
+    document.getElementById("teacher-login-area").style.display = "none";
+    document.getElementById("nav-teacher").style.display = "";
+    switchView("teacher");
+  } else {
+    alert("Wrong password.");
+  }
+}
+
+/* ── passage select / display ── */
+function populateSelect() {
+  const sel = document.getElementById("passage-select");
+  sel.innerHTML = passages.map((p, i) => `<option value="${i}">${i + 1}. ${p.title}</option>`).join("");
+  sel.value = currentIdx;
+}
+
+function loadPassage(idx) {
+  currentIdx = idx;
+  document.getElementById("passage-select").value = idx;
+  document.getElementById("passage-box").textContent = passages[idx].text;
+}
+
+function shufflePassage() {
+  if (passages.length < 2) { loadPassage(0); return; }
+  let next;
+  do { next = Math.floor(Math.random() * passages.length); } while (next === currentIdx);
+  loadPassage(next);
+}
+
+/* ── word count ── */
+function countWords(text) {
+  const trimmed = text.trim();
+  if (!trimmed) return 0;
+  return trimmed.split(/\s+/).length;
+}
+
+function updateCount() {
+  const text = document.getElementById("answer-box").value;
+  const n = countWords(text);
+  const badge = document.getElementById("count-badge");
+  const label = document.getElementById("count-label");
+  badge.textContent = n + " words";
+
+  if (n === 0) {
+    badge.className = "count-badge bad";
+    label.textContent = "";
+  } else if (n < 40) {
+    badge.className = "count-badge bad";
+    label.textContent = "Too short — aim for 50–70 words";
+  } else if (n < 50) {
+    badge.className = "count-badge ok";
+    label.textContent = "A bit short — acceptable, but 50–70 is safer";
+  } else if (n <= 70) {
+    badge.className = "count-badge ideal";
+    label.textContent = "Ideal range";
+  } else if (n <= 75) {
+    badge.className = "count-badge ok";
+    label.textContent = "A bit long — acceptable, but 50–70 is safer";
+  } else {
+    badge.className = "count-badge bad";
+    label.textContent = "Too long — over 75 words will lose marks";
+  }
+}
+
+function clearAnswer() {
+  if (confirm("Clear your answer?")) {
+    document.getElementById("answer-box").value = "";
+    updateCount();
+  }
+}
+
+/* ── save / load responses ── */
+function saveResponse() {
+  const text = document.getElementById("answer-box").value.trim();
+  if (!text) return;
+  const key = "swt_save_" + Date.now();
+  const entry = {
+    passage: passages[currentIdx].title,
+    text: text,
+    words: countWords(text),
+    at: new Date().toLocaleString()
+  };
+  try {
+    localStorage.setItem(key, JSON.stringify(entry));
+    const msg = document.getElementById("save-msg");
+    msg.textContent = "Saved ✓";
+    setTimeout(() => { msg.textContent = ""; }, 2000);
+    loadSaved();
+  } catch (e) {
+    document.getElementById("save-msg").textContent = "Save failed";
+  }
+}
+
+function loadSaved() {
+  const list = document.getElementById("saved-list");
+  const noSaves = document.getElementById("no-saves");
+  list.innerHTML = "";
+  const keys = Object.keys(localStorage).filter(k => k.startsWith("swt_save_")).sort().reverse();
+  if (!keys.length) { noSaves.style.display = "block"; return; }
+  noSaves.style.display = "none";
+  keys.forEach(k => {
+    try {
+      const e = JSON.parse(localStorage.getItem(k));
+      const div = document.createElement("div");
+      div.className = "saved-entry";
+      div.innerHTML = `<div class="saved-meta">${e.at} · ${e.passage} · ${e.words} words</div>${e.text}`;
+      list.appendChild(div);
+    } catch (err) {}
+  });
+}
+
+/* ── teacher panel ── */
+function renderTeacherPanel() {
+  const list = document.getElementById("passage-manage-list");
+  list.innerHTML = passages.map((p, i) => {
+    const isDefault = i < DEFAULT_PASSAGES.length;
+    return `<div class="passage-list-item">
+      <p><b>${p.title}</b>${isDefault ? ' <span style="color:#9ca3af">(built-in)</span>' : ''}<br>${p.text.slice(0, 140)}…</p>
+      ${isDefault ? '' : `<button class="del-btn" onclick="removePassage(${i - DEFAULT_PASSAGES.length})">✕</button>`}
+    </div>`;
+  }).join("");
+}
+
+function addPassage() {
+  const title = document.getElementById("new-passage-title").value.trim() || "Untitled Passage";
+  const text = document.getElementById("new-passage-text").value.trim();
+  if (!text) { alert("Please paste passage text first."); return; }
+  const custom = loadCustomPassages();
+  custom.push({ title, text });
+  saveCustomPassages(custom);
+  rebuildPassages();
+  populateSelect();
+  renderTeacherPanel();
+  document.getElementById("new-passage-title").value = "";
+  document.getElementById("new-passage-text").value = "";
+}
+
+function removePassage(customIdx) {
+  const custom = loadCustomPassages();
+  custom.splice(customIdx, 1);
+  saveCustomPassages(custom);
+  rebuildPassages();
+  populateSelect();
+  renderTeacherPanel();
+}
+
+/* ── init ── */
+rebuildPassages();
+populateSelect();
+loadPassage(0);
+updateCount();
+loadSaved();
+</script>
+</body>
+</html>
