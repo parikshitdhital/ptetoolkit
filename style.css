@@ -277,3 +277,26 @@ table.swap-table th {
   user-select: none;
   -webkit-user-select: none;
 }
+
+/* ── permanent top banner (logo = home button) ── */
+.ptk-banner-spacer { height: 58px; }
+.ptk-banner {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 58px;
+  z-index: 2147483000;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  background: #ffffff;
+  border-bottom: 3px solid #0f5a96;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(0);
+  transition: transform .25s ease;
+  will-change: transform;
+}
+.ptk-banner.ptk-hidden { transform: translateY(-110%); box-shadow: none; }
+.ptk-banner a { display: inline-flex; align-items: center; }
+.ptk-banner img { height: 46px; width: auto; display: block; }
+.ptk-nobanner .ptk-banner, .ptk-nobanner .ptk-banner-spacer { display: none; }
+@media (prefers-reduced-motion: reduce) { .ptk-banner { transition: none; } }

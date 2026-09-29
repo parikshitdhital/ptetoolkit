@@ -138,8 +138,35 @@ select.blank-select.wrong{border-color:#ef4444;background:#fef2f2;color:#991b1b}
   -webkit-user-select: none;
 }
 </style>
+<style>
+/* ── permanent top banner (logo = home button) ── */
+.ptk-banner-spacer { height: 58px; }
+.ptk-banner {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 58px;
+  z-index: 2147483000;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  background: #ffffff;
+  border-bottom: 3px solid #0f5a96;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(0);
+  transition: transform .25s ease;
+  will-change: transform;
+}
+.ptk-banner.ptk-hidden { transform: translateY(-110%); box-shadow: none; }
+.ptk-banner a { display: inline-flex; align-items: center; }
+.ptk-banner img { height: 46px; width: auto; display: block; }
+.ptk-nobanner .ptk-banner, .ptk-nobanner .ptk-banner-spacer { display: none; }
+@media (prefers-reduced-motion: reduce) { .ptk-banner { transition: none; } }
+</style>
 </head>
 <body>
+<div class="ptk-banner-spacer"></div>
+<div class="ptk-banner"><a href="index.html" aria-label="PTE Nepal - back to homepage"><img src="logo.jpg" alt="PTE Nepal" onerror="document.documentElement.classList.add('ptk-nobanner')"></a></div>
+
 
 <header>
   <h1>PTE Academic Collocations</h1>
@@ -1203,5 +1230,23 @@ function renderPassage(){
 renderList(-1,'');
 </script>
 <div class="ptk-watermark">Made by Parikshit</div>
+<script>
+/* hide banner on scroll down, show on scroll up */
+(function () {
+  var banner = document.querySelector('.ptk-banner');
+  if (!banner) return;
+  var lastY = window.pageYOffset || 0, TOL = 8;
+  window.addEventListener('scroll', function () {
+    var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+    if (y <= 0) { banner.classList.remove('ptk-hidden'); lastY = 0; return; }
+    var d = y - lastY;
+    if (Math.abs(d) < TOL) return;
+    var maxY = document.documentElement.scrollHeight - window.innerHeight;
+    if (d < 0 && y >= maxY - 1) { lastY = y; return; }   /* ignore bottom bounce */
+    if (d > 0) banner.classList.add('ptk-hidden'); else banner.classList.remove('ptk-hidden');
+    lastY = y;
+  }, { passive: true });
+})();
+</script>
 </body>
 </html>
