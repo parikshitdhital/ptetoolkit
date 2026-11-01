@@ -1,5 +1,3 @@
-const { Redis } = require('@upstash/redis');
-const redis = Redis.fromEnv();
 const KEY = 'pte:essay:questions';
 
 function isTeacher(req) {
@@ -7,19 +5,37 @@ function isTeacher(req) {
   return !!pw && req.headers['x-teacher-password'] === pw;
 }
 
+function getRedis() {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) throw new Error('UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN missing in Vercel (add them, then redeploy)');
+  let Redis;
+  try { ({ Redis } = require('@upstash/redis')); }
+  catch (e) { throw new Error('Database library not installed: package.json is missing from the repo root'); }
+  return new Redis({ url, token });
+}
+
 module.exports = async (req, res) => {
   try {
-    let list = (await redis.get(KEY)) || [];
+    if (!process.env.TEACHER_PASSWORD) {
+      return res.status(500).json({ error: 'TEACHER_PASSWORD is not set in Vercel (add it, then redeploy)' });
+    }
 
+    // Login check happens first, so it works even before the database is connected
     if (req.method === 'GET' && req.query.auth) {
       return isTeacher(req)
         ? res.status(200).json({ ok: true })
         : res.status(401).json({ error: 'Wrong password' });
     }
 
-    if (req.method === 'GET') return res.status(200).json({ questions: list });
+    if (req.method !== 'GET' && !isTeacher(req)) {
+      return res.status(401).json({ error: 'Wrong teacher password' });
+    }
 
-    if (!isTeacher(req)) return res.status(401).json({ error: 'Wrong teacher password' });
+    const redis = getRedis();
+    let list = (await redis.get(KEY)) || [];
+
+    if (req.method === 'GET') return res.status(200).json({ questions: list });
 
     if (req.method === 'POST') {
       const texts = ((req.body && req.body.texts) || [])
@@ -38,6 +54,6 @@ module.exports = async (req, res) => {
 
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (e) {
-    return res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ error: e.message || 'Server error' });
   }
 };

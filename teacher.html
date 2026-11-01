@@ -77,11 +77,20 @@ async function call(method, query = '', body) {
 async function login(p, silent) {
   try {
     const r = await fetch('/api/questions?auth=1', { headers: { 'x-teacher-password': p } });
-    if (!r.ok) { if (!silent) say('loginMsg', r.status === 401 ? 'Wrong password.' : 'Server problem. Check your Vercel environment variables.', false); return; }
+    if (!r.ok) {
+      if (!silent) {
+        const d = await r.json().catch(() => ({}));
+        let m = d.error || ('Server problem (error ' + r.status + ').');
+        if (r.status === 404) m = 'Error 404: the api folder was not deployed. Check that api/questions.js is in your repo.';
+        say('loginMsg', m, false);
+      }
+      return;
+    }
   } catch (e) { if (!silent) say('loginMsg', 'Could not reach the server.', false); return; }
   pass = p; sessionStorage.setItem('tpw', p);
   $('login').style.display = 'none'; $('panel').style.display = 'block';
   const d = await fetch('/api/questions').then(r => r.json()).catch(() => ({}));
+  if (d.error) say('msg', 'Logged in, but the database says: ' + d.error, false);
   render(d.questions || []);
 }
 
