@@ -11,6 +11,12 @@ module.exports = async (req, res) => {
   try {
     let list = (await redis.get(KEY)) || [];
 
+    if (req.method === 'GET' && req.query.auth) {
+      return isTeacher(req)
+        ? res.status(200).json({ ok: true })
+        : res.status(401).json({ error: 'Wrong password' });
+    }
+
     if (req.method === 'GET') return res.status(200).json({ questions: list });
 
     if (!isTeacher(req)) return res.status(401).json({ error: 'Wrong teacher password' });

@@ -8,34 +8,47 @@
 <style>
 .tp{max-width:800px;margin:0 auto;padding:24px 20px 60px}
 .tp h2{font-size:18px;margin:24px 0 8px}
-.tp input,.tp textarea{width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font:15px system-ui}
+.tp input,.tp textarea{width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font:15px system-ui;box-sizing:border-box}
 .tp textarea{min-height:130px}
 .tp button{background:#1e2a78;color:#fff;border:0;border-radius:6px;padding:10px 18px;font-size:15px;cursor:pointer;margin-top:8px}
 .tp button.del{background:#b91c1c;padding:6px 12px;font-size:13px;margin:0}
+.tp button.out{background:#6b7280;margin:0}
 .tp .q{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:10px;display:flex;gap:12px;justify-content:space-between;align-items:flex-start}
 .tp .hint{color:#6b7280;font-size:13px;margin-top:4px}
-#msg{margin-top:8px;font-size:14px}
+#login{max-width:360px;margin:40px auto;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:24px}
+#panel{display:none}
+.bar{display:flex;justify-content:space-between;align-items:center}
+.msg{margin-top:8px;font-size:14px}
 </style>
 </head>
 <body>
 <header class="site-header"><div class="inner"><h1>Teacher Panel</h1><a class="back-link" href="index.html">← Back to Toolkit</a></div></header>
 <div class="tp">
-  <h2>1. Teacher password</h2>
-  <input type="password" id="pw" placeholder="Enter your teacher password">
 
-  <h2>2. Add essay questions</h2>
-  <textarea id="newq" placeholder="Paste the essay topic here..."></textarea>
-  <p class="hint">To add several at once, separate them with a line containing only ---</p>
-  <button id="save">Save question(s)</button>
-  <div id="msg"></div>
+  <div id="login">
+    <h2 style="margin-top:0">Teacher Login</h2>
+    <input type="password" id="pw" placeholder="Teacher password" autocomplete="current-password">
+    <button id="loginBtn" style="width:100%">Login</button>
+    <div class="msg" id="loginMsg"></div>
+  </div>
 
-  <h2>3. Saved questions (<span id="count">0</span>)</h2>
-  <div id="list"></div>
+  <div id="panel">
+    <div class="bar"><h2 style="margin:0">Add essay questions</h2><button class="out" id="logout">Logout</button></div>
+    <textarea id="newq" placeholder="Paste the essay topic here..." style="margin-top:12px"></textarea>
+    <p class="hint">To add several at once, separate them with a line containing only ---</p>
+    <button id="save">Save question(s)</button>
+    <div class="msg" id="msg"></div>
+
+    <h2>Saved questions (<span id="count">0</span>)</h2>
+    <div id="list"></div>
+  </div>
 </div>
 <script>
 const $ = id => document.getElementById(id);
-$('pw').value = sessionStorage.getItem('tpw') || '';
-function say(t, ok) { $('msg').textContent = t; $('msg').style.color = ok ? '#15803d' : '#b91c1c'; }
+let pass = '';
+
+function say(el, t, ok) { $(el).textContent = t; $(el).style.color = ok ? '#15803d' : '#b91c1c'; }
+
 function render(qs) {
   $('count').textContent = qs.length;
   $('list').innerHTML = '';
@@ -43,29 +56,46 @@ function render(qs) {
     const d = document.createElement('div'); d.className = 'q';
     const p = document.createElement('div'); p.textContent = q.text;
     const b = document.createElement('button'); b.className = 'del'; b.textContent = 'Delete';
-    b.onclick = () => call('DELETE', '?id=' + encodeURIComponent(q.id));
+    b.onclick = () => { if (confirm('Delete this question?')) call('DELETE', '?id=' + encodeURIComponent(q.id)); };
     d.append(p, b); $('list').append(d);
   });
 }
+
 async function call(method, query = '', body) {
-  sessionStorage.setItem('tpw', $('pw').value);
   const r = await fetch('/api/questions' + query, {
     method,
-    headers: { 'Content-Type': 'application/json', 'x-teacher-password': $('pw').value },
+    headers: { 'Content-Type': 'application/json', 'x-teacher-password': pass },
     body: body ? JSON.stringify(body) : undefined
   });
-  const data = await r.json();
-  if (!r.ok) return say(data.error || 'Something went wrong', false);
-  render(data.questions); say('Saved.', true);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) { say('msg', data.error || 'Something went wrong', false); return null; }
+  if (data.questions) render(data.questions);
+  say('msg', 'Saved.', true);
   return data;
 }
+
+async function login(p, silent) {
+  try {
+    const r = await fetch('/api/questions?auth=1', { headers: { 'x-teacher-password': p } });
+    if (!r.ok) { if (!silent) say('loginMsg', r.status === 401 ? 'Wrong password.' : 'Server problem. Check your Vercel environment variables.', false); return; }
+  } catch (e) { if (!silent) say('loginMsg', 'Could not reach the server.', false); return; }
+  pass = p; sessionStorage.setItem('tpw', p);
+  $('login').style.display = 'none'; $('panel').style.display = 'block';
+  const d = await fetch('/api/questions').then(r => r.json()).catch(() => ({}));
+  render(d.questions || []);
+}
+
+$('loginBtn').onclick = () => login($('pw').value, false);
+$('pw').addEventListener('keydown', e => { if (e.key === 'Enter') login($('pw').value, false); });
+$('logout').onclick = () => { sessionStorage.removeItem('tpw'); location.reload(); };
 $('save').onclick = async () => {
   const texts = $('newq').value.split(/\n\s*---\s*\n/).map(t => t.trim()).filter(Boolean);
-  if (!texts.length) return say('Type a question first.', false);
-  const r = await call('POST', '', { texts });
-  if (r) $('newq').value = '';
+  if (!texts.length) return say('msg', 'Type a question first.', false);
+  if (await call('POST', '', { texts })) $('newq').value = '';
 };
-fetch('/api/questions').then(r => r.json()).then(d => render(d.questions || [])).catch(() => {});
+
+const saved = sessionStorage.getItem('tpw');
+if (saved) login(saved, true);
 </script>
 </body>
 </html>
