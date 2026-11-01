@@ -113,30 +113,41 @@ function load(i) {
   startTimer();
 }
 
-async function submit() {
+let pending = null;
+function submit() {
   clearInterval(timerId);
-  const essay = $('essay').value, qi = +$('qsel').value, q = questions[qi];
+  pending = { essay: $('essay').value, q: questions[+$('qsel').value] };
   $('test').style.display = 'none';
-  const d = $('done'); d.style.display = 'block';
-  d.innerHTML = '<p><b>Marking your essay...</b> This takes about 10-20 seconds.</p>';
+  mark();
+}
+async function mark() {
+  const { essay, q } = pending, d = $('done');
+  d.style.display = 'block';
+  d.innerHTML = '<p><b>Marking your essay...</b> This can take up to a minute when the AI is busy. Please keep this page open.</p>';
   try {
     const r = await fetch('/api/feedback', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (store.get('ptk_token') || '') },
       body: JSON.stringify({ question: q.text, questionId: q.id, essay })
     });
-    const f = await r.json();
+    const f = await r.json().catch(() => ({ error: 'The server took too long to answer.' }));
     if (!r.ok) {
       if (f.login) {
         store.del('ptk_token');
         d.innerHTML = '<p style="color:#b91c1c"><b>Your session ended, so this essay could not be marked.</b> Copy your essay below, log in again, and paste it back.</p><textarea readonly style="width:100%;height:220px"></textarea><p><button class="again" onclick="location.reload()">Log in again</button></p>';
         d.querySelector('textarea').value = essay; return;
       }
+      if (r.status === 400) {  // e.g. essay too short: go back to editing
+        alert(f.error); d.style.display = 'none'; $('test').style.display = 'block';
+        timerId = setInterval(() => { left--; tick(); if (left <= 0) submit(); }, 1000); return;
+      }
       throw new Error(f.error || 'Something went wrong');
     }
     d.innerHTML = renderFeedback(f) + '<p><button class="again" onclick="location.reload()">Practice again</button> &nbsp; <a href="history.html">View my history</a></p>';
   } catch (e) {
-    d.innerHTML = '<p style="color:#b91c1c"><b>' + escHtml(e.message) + '</b></p><p><button class="again" onclick="location.reload()">Back</button></p>';
+    d.innerHTML = '<p style="color:#b91c1c"><b>' + escHtml(e.message) + '</b></p><p><button class="again" id="retry">Try again</button></p><p><b>Your essay (copy it if you want to be safe):</b></p><textarea readonly style="width:100%;height:200px"></textarea>';
+    d.querySelector('textarea').value = essay;
+    $('retry').onclick = mark;
   }
 }
 
