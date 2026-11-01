@@ -42,6 +42,7 @@
 </div>
 <script>
 const $ = id => document.getElementById(id);
+const SAMPLE = "Many people find that work leaves little time for people's personal life. How widespread do you think it is? How can we solve the problems caused by the shortage of time?";
 let questions = [], timerId = null, left = 1200;
 
 const words = s => (s.trim().match(/\S+/g) || []).length;
@@ -95,10 +96,15 @@ $('qsel').onchange = () => {
 
 fetch('/api/questions').then(r => r.json()).then(d => {
   questions = d.questions || [];
+  if (!questions.length) questions = [{ id: 'sample', text: SAMPLE }];
   if (!questions.length) { $('empty').style.display = 'block'; return; }
   questions.forEach((q, i) => { const o = document.createElement('option'); o.value = i; o.textContent = 'Question ' + (i + 1); $('qsel').append(o); });
   $('qsel').dataset.cur = 0; load(0);
-}).catch(() => { $('empty').textContent = 'Could not load questions.'; $('empty').style.display = 'block'; });
+}).catch(() => {
+  questions = [{ id: 'sample', text: SAMPLE }];
+  const o = document.createElement('option'); o.value = 0; o.textContent = 'Question 1'; $('qsel').append(o);
+  $('qsel').dataset.cur = 0; load(0);
+});
 </script>
 </body>
 </html>
