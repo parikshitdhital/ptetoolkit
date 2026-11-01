@@ -1,7 +1,7 @@
 const GUIDE = require('./_guide.js');
 const L = require('./_lib.js');
 
-const MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+const MODELS = (process.env.GEMINI_MODELS || process.env.GEMINI_MODEL || 'gemini-flash-latest,gemini-flash-lite-latest').split(',').map(x => x.trim()).filter(Boolean);
 const DAILY_LIMIT = parseInt(process.env.FEEDBACK_DAILY_LIMIT || '10', 10);
 const MAX = { content: 3, form: 2, dsc: 2, grammar: 2, glr: 2, vocab: 2, spelling: 2 };
 
@@ -47,13 +47,42 @@ OUTPUT: return ONLY valid JSON, no markdown, exactly this shape:
 function clamp(n, max) { n = Math.round(Number(n)); return isNaN(n) ? 0 : Math.max(0, Math.min(max, n)); }
 function formScore(w) { return (w >= 200 && w <= 300) ? 2 : ((w >= 120 && w <= 380) ? 1 : 0); }
 
-async function limited(redis, username) {
-  try {
-    const key = 'pte:fb:' + username + ':' + new Date().toISOString().slice(0, 10);
-    const n = await redis.incr(key);
-    if (n === 1) await redis.expire(key, 86400);
-    return n > DAILY_LIMIT;
-  } catch (e) { return false; }
+const useKey = u => 'pte:fb:' + u + ':' + new Date().toISOString().slice(0, 10);
+async function overLimit(redis, username) {
+  try { return (Number(await redis.get(useKey(username))) || 0) >= DAILY_LIMIT; } catch (e) { return false; }
+}
+async function countUse(redis, username) {
+  try { const n = await redis.incr(useKey(username)); if (n === 1) await redis.expire(useKey(username), 86400); } catch (e) {}
+}
+
+// Free-tier reliability: try each model in turn, retry a few rounds, stay inside Vercel's time limit
+async function askGemini(payload) {
+  const deadline = Date.now() + 52000;
+  for (let round = 0; round < 4; round++) {
+    for (const model of MODELS) {
+      const left = deadline - Date.now();
+      if (left < 5000) return { busy: true };
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), Math.min(25000, left));
+      try {
+        const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', {
+          method: 'POST', signal: ctl.signal,
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
+          body: payload
+        });
+        if (r.status === 400 || r.status === 401 || r.status === 403)
+          return { fatal: 'Google rejected the request (error ' + r.status + '). Check GEMINI_API_KEY in Vercel.' };
+        if (!r.ok) continue;                       // 404, 429, 5xx: try the next model
+        const data = await r.json();
+        let txt = (((data.candidates || [])[0] || {}).content || {}).parts;
+        txt = (txt || []).map(p => p.text || '').join('').replace(/```json|```/g, '').trim();
+        return { fb: JSON.parse(txt) };
+      } catch (e) { /* timeout, network problem or bad JSON: try again */ }
+      finally { clearTimeout(timer); }
+    }
+    await new Promise(r => setTimeout(r, 1500 * (round + 1)));
+  }
+  return { busy: true };
 }
 
 module.exports = async (req, res) => {
@@ -70,26 +99,18 @@ module.exports = async (req, res) => {
     const words = (essay.match(/\S+/g) || []).length;
     if (words < 20) return res.status(400).json({ error: 'Your essay is too short to mark. Write at least a few sentences.' });
 
-    if (await limited(redis, student.username)) return res.status(429).json({ error: 'Daily feedback limit reached (' + DAILY_LIMIT + ' per day). Please try again tomorrow.' });
+    if (await overLimit(redis, student.username)) return res.status(429).json({ error: 'Daily feedback limit reached (' + DAILY_LIMIT + ' per day). Please try again tomorrow.' });
 
-    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + MODEL + ':generateContent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM }] },
-        contents: [{ role: 'user', parts: [{ text: 'QUESTION:\n' + question + '\n\nSTUDENT ESSAY (' + words + ' words):\n' + essay }] }],
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.3 }
-      })
+    const payload = JSON.stringify({
+      systemInstruction: { parts: [{ text: SYSTEM }] },
+      contents: [{ role: 'user', parts: [{ text: 'QUESTION:\n' + question + '\n\nSTUDENT ESSAY (' + words + ' words):\n' + essay }] }],
+      generationConfig: { responseMimeType: 'application/json', temperature: 0.3 }
     });
-    if (!r.ok) {
-      if (r.status === 429) return res.status(503).json({ error: 'The AI is busy right now. Please wait a minute and try again.' });
-      if (r.status === 404) return res.status(500).json({ error: 'AI model "' + MODEL + '" not found. In Vercel add GEMINI_MODEL with a current Flash model name from Google AI Studio, then redeploy.' });
-      return res.status(500).json({ error: 'AI request failed (error ' + r.status + '). Check your GEMINI_API_KEY.' });
-    }
-    const data = await r.json();
-    let txt = (((data.candidates || [])[0] || {}).content || {}).parts;
-    txt = (txt || []).map(p => p.text || '').join('').replace(/```json|```/g, '').trim();
-    const fb = JSON.parse(txt);
+    const out = await askGemini(payload);
+    if (out.fatal) return res.status(500).json({ error: out.fatal });
+    if (out.busy) return res.status(503).json({ error: "The AI is very busy right now (Google's free servers are crowded). Your essay is safe on this page. Press Try again in a minute. This did not count against your daily limit." });
+    const fb = out.fb;
+    await countUse(redis, student.username);
 
     // Server-side scoring: form from word count, clamp the rest, total out of 90
     const c = fb.criteria || {};
