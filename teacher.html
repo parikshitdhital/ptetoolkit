@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teacher Panel</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.tp{max-width:800px;margin:0 auto;padding:24px 20px 60px}
+.tp h2{font-size:18px;margin:24px 0 8px}
+.tp input,.tp textarea{width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font:15px system-ui}
+.tp textarea{min-height:130px}
+.tp button{background:#1e2a78;color:#fff;border:0;border-radius:6px;padding:10px 18px;font-size:15px;cursor:pointer;margin-top:8px}
+.tp button.del{background:#b91c1c;padding:6px 12px;font-size:13px;margin:0}
+.tp .q{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:10px;display:flex;gap:12px;justify-content:space-between;align-items:flex-start}
+.tp .hint{color:#6b7280;font-size:13px;margin-top:4px}
+#msg{margin-top:8px;font-size:14px}
+</style>
+</head>
+<body>
+<header class="site-header"><div class="inner"><h1>Teacher Panel</h1><a class="back-link" href="index.html">← Back to Toolkit</a></div></header>
+<div class="tp">
+  <h2>1. Teacher password</h2>
+  <input type="password" id="pw" placeholder="Enter your teacher password">
+
+  <h2>2. Add essay questions</h2>
+  <textarea id="newq" placeholder="Paste the essay topic here..."></textarea>
+  <p class="hint">To add several at once, separate them with a line containing only ---</p>
+  <button id="save">Save question(s)</button>
+  <div id="msg"></div>
+
+  <h2>3. Saved questions (<span id="count">0</span>)</h2>
+  <div id="list"></div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+$('pw').value = sessionStorage.getItem('tpw') || '';
+function say(t, ok) { $('msg').textContent = t; $('msg').style.color = ok ? '#15803d' : '#b91c1c'; }
+function render(qs) {
+  $('count').textContent = qs.length;
+  $('list').innerHTML = '';
+  qs.forEach(q => {
+    const d = document.createElement('div'); d.className = 'q';
+    const p = document.createElement('div'); p.textContent = q.text;
+    const b = document.createElement('button'); b.className = 'del'; b.textContent = 'Delete';
+    b.onclick = () => call('DELETE', '?id=' + encodeURIComponent(q.id));
+    d.append(p, b); $('list').append(d);
+  });
+}
+async function call(method, query = '', body) {
+  sessionStorage.setItem('tpw', $('pw').value);
+  const r = await fetch('/api/questions' + query, {
+    method,
+    headers: { 'Content-Type': 'application/json', 'x-teacher-password': $('pw').value },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const data = await r.json();
+  if (!r.ok) return say(data.error || 'Something went wrong', false);
+  render(data.questions); say('Saved.', true);
+  return data;
+}
+$('save').onclick = async () => {
+  const texts = $('newq').value.split(/\n\s*---\s*\n/).map(t => t.trim()).filter(Boolean);
+  if (!texts.length) return say('Type a question first.', false);
+  const r = await call('POST', '', { texts });
+  if (r) $('newq').value = '';
+};
+fetch('/api/questions').then(r => r.json()).then(d => render(d.questions || [])).catch(() => {});
+</script>
+</body>
+</html>
