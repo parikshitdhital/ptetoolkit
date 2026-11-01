@@ -1,4 +1,5 @@
 const GUIDE = require('./_guide.js');
+const L = require('./_lib.js');
 
 const MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
 const DAILY_LIMIT = parseInt(process.env.FEEDBACK_DAILY_LIMIT || '10', 10);
@@ -46,14 +47,9 @@ OUTPUT: return ONLY valid JSON, no markdown, exactly this shape:
 function clamp(n, max) { n = Math.round(Number(n)); return isNaN(n) ? 0 : Math.max(0, Math.min(max, n)); }
 function formScore(w) { return (w >= 200 && w <= 300) ? 2 : ((w >= 120 && w <= 380) ? 1 : 0); }
 
-async function limited(req) {
+async function limited(redis, username) {
   try {
-    const url = process.env.UPSTASH_REDIS_REST_URL, token = process.env.UPSTASH_REDIS_REST_TOKEN;
-    if (!url || !token) return false;
-    const { Redis } = require('@upstash/redis');
-    const redis = new Redis({ url, token });
-    const ip = String(req.headers['x-forwarded-for'] || 'x').split(',')[0].trim();
-    const key = 'pte:fb:' + ip + ':' + new Date().toISOString().slice(0, 10);
+    const key = 'pte:fb:' + username + ':' + new Date().toISOString().slice(0, 10);
     const n = await redis.incr(key);
     if (n === 1) await redis.expire(key, 86400);
     return n > DAILY_LIMIT;
@@ -63,6 +59,10 @@ async function limited(req) {
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   try {
+    let redis;
+    try { redis = L.getRedis(); } catch (e) { return res.status(500).json({ error: e.message }); }
+    const student = await L.getStudent(req, redis);
+    if (!student) return res.status(401).json({ error: 'Please log in again.', login: true });
     if (!process.env.GEMINI_API_KEY) return res.status(500).json({ error: 'GEMINI_API_KEY is not set in Vercel (add it, then redeploy)' });
 
     const question = String((req.body && req.body.question) || '').slice(0, 2000);
@@ -70,7 +70,7 @@ module.exports = async (req, res) => {
     const words = (essay.match(/\S+/g) || []).length;
     if (words < 20) return res.status(400).json({ error: 'Your essay is too short to mark. Write at least a few sentences.' });
 
-    if (await limited(req)) return res.status(429).json({ error: 'Daily feedback limit reached (' + DAILY_LIMIT + ' per day). Please try again tomorrow.' });
+    if (await limited(redis, student.username)) return res.status(429).json({ error: 'Daily feedback limit reached (' + DAILY_LIMIT + ' per day). Please try again tomorrow.' });
 
     const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + MODEL + ':generateContent', {
       method: 'POST',
@@ -102,6 +102,13 @@ module.exports = async (req, res) => {
     fb.criteria.form.comment = words + ' words. ' + (sc.form === 2 ? 'Within the 200-300 range.' : 'The target is 200-300 words.');
     fb.word_count = words;
     fb.overall = Math.round((raw / 15) * 90);
+
+    try {  // save to this student's history
+      const attempt = { id: Date.now().toString(36), date: new Date().toISOString(), questionId: String((req.body && req.body.questionId) || ''), question, essay, words, overall: fb.overall, feedback: fb };
+      await redis.lpush('pte:hist:' + student.username, attempt);
+      await redis.ltrim('pte:hist:' + student.username, 0, 199);
+      fb.attempt_id = attempt.id;
+    } catch (e) { /* feedback still returned even if saving fails */ }
     return res.status(200).json(fb);
   } catch (e) {
     return res.status(500).json({ error: 'Could not read the AI response. Please try again.' });
