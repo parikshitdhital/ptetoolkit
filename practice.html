@@ -6,96 +6,137 @@
 <title>Essay Practice</title>
 <link rel="stylesheet" href="style.css">
 <style>
-.pt{max-width:1000px;margin:0 auto;padding:16px 20px 60px}
-.pt-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font-family:Arial,sans-serif;font-size:14px;color:#444}
-.pt-test{background:#f4f6f9;padding:22px;font-family:Arial,Helvetica,sans-serif}
+.pt{max-width:1000px;margin:0 auto;padding:16px 20px 60px;font-family:Arial,sans-serif}
+.pt-user{display:flex;justify-content:flex-end;gap:14px;font-size:14px;margin-bottom:8px}
+.pt-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font-size:14px;color:#444}
+.pt-test{background:#f4f6f9;padding:22px}
 .pt-instr{font-style:italic;font-weight:700;color:#333;font-size:15px;letter-spacing:.3px}
 .pt-topic{color:#555;font-size:16px;margin:16px 0;letter-spacing:.3px;white-space:pre-wrap}
 .pt-tool{background:#dcdfe3;display:flex;justify-content:space-between;padding:10px 16px;color:#444;font-size:15px}
 .pt-tool button{background:none;border:0;font:inherit;color:#444;margin-right:22px;cursor:pointer}
-#essay{display:block;width:100%;min-height:150px;resize:none;overflow:hidden;background:#f7dfa8;border:1px solid #c9c9c9;padding:14px;font:16px Arial,sans-serif;outline:none}
+#essay{display:block;width:100%;min-height:150px;resize:none;overflow:hidden;background:#f7dfa8;border:1px solid #c9c9c9;padding:14px;font:16px Arial,sans-serif;outline:none;box-sizing:border-box}
 .pt-next{text-align:right;margin-top:60px}
-.pt-next button{background:#0b6bb5;color:#fff;border:0;padding:14px 28px;font-size:16px;cursor:pointer}
+.pt-next button,.again{background:#0b6bb5;color:#fff;border:0;padding:14px 28px;font-size:16px;cursor:pointer}
 .over{color:#b91c1c}
-#done{display:none;background:#fff;border:1px solid #e5e7eb;padding:20px;margin-top:16px;font-family:Arial,sans-serif}
-#done .score{font-size:18px;margin-bottom:12px}#done .score span{font-size:44px;font-weight:700;color:#1e2a78}
-#done table{border-collapse:collapse;width:100%;font-size:14px}#done td{border-bottom:1px solid #e5e7eb;padding:8px;vertical-align:top}
-#done .para{border:1px solid #e5e7eb;border-radius:8px;padding:12px 16px;margin:10px 0}#done h4{margin:0 0 6px}
-#done .g{color:#15803d;font-weight:700;margin:8px 0 2px}#done .o{color:#b45309;font-weight:700;margin:8px 0 2px}#done .b{color:#1e2a78;font-weight:700;margin:8px 0 2px}
-#done ul{margin:0 0 0 18px;padding:0}.again{background:#0b6bb5;color:#fff;border:0;padding:10px 20px;font-size:15px;cursor:pointer}
+#done{display:none;background:#fff;border:1px solid #e5e7eb;padding:20px;margin-top:16px}
+#loginBox{max-width:340px;margin:50px auto;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:24px}
+#loginBox input{width:100%;padding:10px;margin-bottom:10px;border:1px solid #ccc;border-radius:6px;font-size:15px;box-sizing:border-box}
+#loginBox button{width:100%;background:#1e2a78;color:#fff;border:0;border-radius:6px;padding:11px;font-size:15px;cursor:pointer}
+#app{display:none}
 </style>
 </head>
 <body>
 <header class="site-header"><div class="inner"><h1>Write Essay Practice</h1><a class="back-link" href="essay-guide.html">← Back to Essay Guide</a></div></header>
 <div class="pt">
-  <div class="pt-top">
-    <label>Question: <select id="qsel"></select></label>
-    <div>Time Remaining: <b id="timer">20:00</b></div>
+
+  <div id="loginBox">
+    <h3 style="margin-top:0">Student Login</h3>
+    <input id="lu" placeholder="Username" autocomplete="username" autocapitalize="off">
+    <input id="lp" type="password" placeholder="Password" autocomplete="current-password">
+    <button id="lbtn">Login</button>
+    <p id="lmsg" style="font-size:14px;color:#b91c1c;margin-bottom:0"></p>
+    <p style="font-size:13px;color:#6b7280">Your teacher gives you your username and password.</p>
   </div>
-  <div id="empty" style="display:none">No questions have been added yet. Please check back soon.</div>
-  <div class="pt-test" id="test" style="display:none">
-    <p class="pt-instr">You will have 20 minutes to plan, write and revise an essay about the topic below. Your response will be judged on how well you develop a position, organize your ideas, present supporting details, and control the elements of standard written English. You should write 200-300 words.</p>
-    <p class="pt-topic" id="topic"></p>
-    <div class="pt-tool">
-      <div><button id="bCopy">Copy</button><button id="bCut">Cut</button><button id="bPaste">Paste</button></div>
-      <div><span id="wc">0</span> / 300 Word Limit</div>
+
+  <div id="app">
+    <div class="pt-user"><span>Hi, <b id="who"></b></span><a href="history.html">My History</a><a href="#" id="logout">Logout</a></div>
+    <div class="pt-top">
+      <label>Question: <select id="qsel"></select></label>
+      <div>Time Remaining: <b id="timer">20:00</b></div>
     </div>
-    <textarea id="essay" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
-    <div class="pt-next"><button id="next">Next ▸</button></div>
+    <div id="empty" style="display:none">No questions have been added yet. Please check back soon.</div>
+    <div class="pt-test" id="test" style="display:none">
+      <p class="pt-instr">You will have 20 minutes to plan, write and revise an essay about the topic below. Your response will be judged on how well you develop a position, organize your ideas, present supporting details, and control the elements of standard written English. You should write 200-300 words.</p>
+      <p class="pt-topic" id="topic"></p>
+      <div class="pt-tool">
+        <div><button id="bCopy">Copy</button><button id="bCut">Cut</button><button id="bPaste">Paste</button></div>
+        <div><span id="wc">0</span> / 300 Word Limit</div>
+      </div>
+      <textarea id="essay" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+      <div class="pt-next"><button id="next">Next ▸</button></div>
+    </div>
+    <div id="done"></div>
   </div>
-  <div id="done"></div>
 </div>
+<script src="fbview.js"></script>
 <script>
 const $ = id => document.getElementById(id);
+const store = {
+  get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} },
+  del: k => { try { localStorage.removeItem(k); } catch (e) {} }
+};
 const SAMPLE = "Many people find that work leaves little time for people's personal life. How widespread do you think it is? How can we solve the problems caused by the shortage of time?";
-let questions = [], timerId = null, left = 1200;
+let questions = [], timerId = null, left = 1200, started = false;
 
+/* ---------- login ---------- */
+function showLogin(msg) { $('app').style.display = 'none'; $('loginBox').style.display = 'block'; $('lmsg').textContent = msg || ''; }
+function showApp(name) {
+  $('loginBox').style.display = 'none'; $('app').style.display = 'block'; $('who').textContent = name || '';
+  if (!started) { started = true; init(); }
+}
+async function doLogin() {
+  $('lmsg').textContent = '';
+  try {
+    const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: $('lu').value, password: $('lp').value }) });
+    const d = await r.json();
+    if (!r.ok) return ($('lmsg').textContent = d.error || 'Login failed');
+    store.set('ptk_token', d.token); store.set('ptk_name', d.name); showApp(d.name);
+  } catch (e) { $('lmsg').textContent = 'Could not reach the server.'; }
+}
+async function boot() {
+  const t = store.get('ptk_token');
+  if (!t) return showLogin();
+  try {
+    const r = await fetch('/api/login', { headers: { Authorization: 'Bearer ' + t } });
+    if (!r.ok) throw 0;
+    showApp((await r.json()).name);
+  } catch (e) { store.del('ptk_token'); showLogin('Please log in again.'); }
+}
+$('lbtn').onclick = doLogin;
+$('lp').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+$('logout').onclick = e => { e.preventDefault(); store.del('ptk_token'); location.reload(); };
+
+/* ---------- test screen ---------- */
 const words = s => (s.trim().match(/\S+/g) || []).length;
 function grow() { const t = $('essay'); t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }
 function updateWC() { const n = words($('essay').value); $('wc').textContent = n; $('wc').className = n > 300 ? 'over' : ''; grow(); }
-
 function startTimer() {
   clearInterval(timerId); left = 1200; tick();
   timerId = setInterval(() => { left--; tick(); if (left <= 0) submit(); }, 1000);
 }
-function tick() {
-  const m = Math.floor(left / 60), s = left % 60;
-  $('timer').textContent = m + ':' + String(s).padStart(2, '0');
-}
+function tick() { const m = Math.floor(left / 60), s = left % 60; $('timer').textContent = m + ':' + String(s).padStart(2, '0'); }
 function load(i) {
   $('essay').value = ''; $('essay').disabled = false; updateWC();
   $('topic').textContent = questions[i].text;
   $('test').style.display = 'block'; $('done').style.display = 'none';
   startTimer();
 }
-const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const li = arr => (arr && arr.length) ? '<ul>' + arr.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '<p><i>-</i></p>';
-const NAMES = { content: 'Content', form: 'Form', dsc: 'Development, Structure & Coherence', grammar: 'Grammar', glr: 'General Linguistic Range', vocab: 'Vocabulary Range', spelling: 'Spelling' };
 
 async function submit() {
   clearInterval(timerId);
-  const essay = $('essay').value, q = questions[+$('qsel').value].text;
+  const essay = $('essay').value, qi = +$('qsel').value, q = questions[qi];
   $('test').style.display = 'none';
   const d = $('done'); d.style.display = 'block';
   d.innerHTML = '<p><b>Marking your essay...</b> This takes about 10-20 seconds.</p>';
   try {
-    const r = await fetch('/api/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: q, essay }) });
-    const f = await r.json();
-    if (!r.ok) throw new Error(f.error || 'Something went wrong');
-    let h = '<div class="score"><span>' + f.overall + '</span> / 90<br><small>Estimated score (not an official PTE result)</small></div>';
-    h += '<p><b>Essay type:</b> ' + esc(f.essay_type) + '. ' + esc(f.type_comment) + '</p>';
-    if (f.topic_phrase) h += '<p><b>Topic phrase:</b> you wrote "' + esc(f.topic_phrase.student_wrote) + '" (' + esc(f.topic_phrase.verdict) + '). Better: <i>' + esc(f.topic_phrase.better_version) + '</i></p>';
-    h += '<h3>Scores by criteria</h3><table>';
-    Object.keys(NAMES).forEach(k => { const c = (f.criteria || {})[k]; if (c) h += '<tr><td>' + NAMES[k] + '</td><td><b>' + c.score + '/' + c.max + '</b></td><td>' + esc(c.comment) + '</td></tr>'; });
-    h += '</table><h3>Paragraph by paragraph</h3>';
-    (f.paragraphs || []).forEach(p => {
-      h += '<div class="para"><h4>' + esc(p.name) + ' <small>' + esc(p.score90) + ' / 90</small></h4><p class="g">What worked</p>' + li(p.worked) + '<p class="o">To improve</p>' + li(p.improve) + '<p class="b">Alternative sentences</p>' + li(p.alternatives) + '</div>';
+    const r = await fetch('/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (store.get('ptk_token') || '') },
+      body: JSON.stringify({ question: q.text, questionId: q.id, essay })
     });
-    h += '<h3>Summary</h3><p>' + esc(f.summary) + '</p><p><b>Fix these next time:</b></p>' + li(f.top_fixes);
-    h += '<p><button class="again" onclick="location.reload()">Practice again</button></p>';
-    d.innerHTML = h;
+    const f = await r.json();
+    if (!r.ok) {
+      if (f.login) {
+        store.del('ptk_token');
+        d.innerHTML = '<p style="color:#b91c1c"><b>Your session ended, so this essay could not be marked.</b> Copy your essay below, log in again, and paste it back.</p><textarea readonly style="width:100%;height:220px"></textarea><p><button class="again" onclick="location.reload()">Log in again</button></p>';
+        d.querySelector('textarea').value = essay; return;
+      }
+      throw new Error(f.error || 'Something went wrong');
+    }
+    d.innerHTML = renderFeedback(f) + '<p><button class="again" onclick="location.reload()">Practice again</button> &nbsp; <a href="history.html">View my history</a></p>';
   } catch (e) {
-    d.innerHTML = '<p style="color:#b91c1c"><b>' + esc(e.message) + '</b></p><p><button class="again" onclick="location.reload()">Back</button></p>';
+    d.innerHTML = '<p style="color:#b91c1c"><b>' + escHtml(e.message) + '</b></p><p><button class="again" onclick="location.reload()">Back</button></p>';
   }
 }
 
@@ -121,17 +162,18 @@ $('qsel').onchange = () => {
   $('qsel').dataset.cur = $('qsel').value;
 };
 
-fetch('/api/questions').then(r => r.json()).then(d => {
-  questions = d.questions || [];
-  if (!questions.length) questions = [{ id: 'sample', text: SAMPLE }];
-  if (!questions.length) { $('empty').style.display = 'block'; return; }
-  questions.forEach((q, i) => { const o = document.createElement('option'); o.value = i; o.textContent = 'Question ' + (i + 1); $('qsel').append(o); });
-  $('qsel').dataset.cur = 0; load(0);
-}).catch(() => {
-  questions = [{ id: 'sample', text: SAMPLE }];
-  const o = document.createElement('option'); o.value = 0; o.textContent = 'Question 1'; $('qsel').append(o);
-  $('qsel').dataset.cur = 0; load(0);
-});
+function init() {
+  const fill = () => {
+    questions.forEach((q, i) => { const o = document.createElement('option'); o.value = i; o.textContent = 'Question ' + (i + 1); $('qsel').append(o); });
+    $('qsel').dataset.cur = 0; load(0);
+  };
+  fetch('/api/questions').then(r => r.json()).then(d => {
+    questions = d.questions || [];
+    if (!questions.length) questions = [{ id: 'sample', text: SAMPLE }];
+    fill();
+  }).catch(() => { questions = [{ id: 'sample', text: SAMPLE }]; fill(); });
+}
+boot();
 </script>
 </body>
 </html>

@@ -41,8 +41,20 @@
 
     <h2>Saved questions (<span id="count">0</span>)</h2>
     <div id="list"></div>
+
+    <h2 style="margin-top:36px">Students</h2>
+    <p class="hint">Create one account per student. Give them their username and password yourself.</p>
+    <input id="sn" placeholder="Student's full name" style="margin-top:8px">
+    <input id="su" placeholder="Username (e.g. ram.k)" style="margin-top:8px" autocapitalize="off">
+    <input id="sp" placeholder="Password (at least 6 characters)" style="margin-top:8px">
+    <button id="screate">Create student account</button>
+    <div class="msg" id="smsg"></div>
+    <h2>All students (<span id="scount">0</span>)</h2>
+    <div id="slist"></div>
+    <div id="shist"></div>
   </div>
 </div>
+<script src="fbview.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 let pass = '';
@@ -92,6 +104,7 @@ async function login(p, silent) {
   const d = await fetch('/api/questions').then(r => r.json()).catch(() => ({}));
   if (d.error) say('msg', 'Logged in, but the database says: ' + d.error, false);
   render(d.questions || []);
+  loadStudents();
 }
 
 $('loginBtn').onclick = () => login($('pw').value, false);
@@ -101,6 +114,55 @@ $('save').onclick = async () => {
   const texts = $('newq').value.split(/\n\s*---\s*\n/).map(t => t.trim()).filter(Boolean);
   if (!texts.length) return say('msg', 'Type a question first.', false);
   if (await call('POST', '', { texts })) $('newq').value = '';
+};
+
+
+/* ---------- students ---------- */
+async function tcall(method, query, body) {
+  const r = await fetch('/api/students' + (query || ''), { method, headers: { 'Content-Type': 'application/json', 'x-teacher-password': pass }, body: body ? JSON.stringify(body) : undefined });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { say('smsg', d.error || 'Something went wrong', false); return null; }
+  return d;
+}
+const fmt = iso => iso ? new Date(iso).toLocaleString([], { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'never';
+async function loadStudents() {
+  const d = await tcall('GET'); if (!d) return;
+  $('scount').textContent = d.students.length; $('slist').innerHTML = '';
+  d.students.forEach(s => {
+    const row = document.createElement('div'); row.className = 'q';
+    const info = document.createElement('div');
+    info.innerHTML = '<b></b> <small></small><br><small>Essays: ' + s.attempts + ' · Last active: ' + fmt(s.last) + '</small>';
+    info.querySelector('b').textContent = s.name; info.querySelector('small').textContent = '(' + s.username + ')';
+    const box = document.createElement('div'); box.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap';
+    const mk = (t, cls, fn) => { const b = document.createElement('button'); b.textContent = t; b.className = cls; b.style.margin = 0; b.onclick = fn; box.append(b); };
+    mk('History', '', () => showHist(s));
+    mk('Reset password', 'out', async () => { const p = prompt('New password for ' + s.username + ' (min 6 characters):'); if (p && await tcall('PUT', '', { username: s.username, password: p })) say('smsg', 'Password changed for ' + s.username + '. Their old login is now invalid.', true); });
+    mk('Delete', 'del', async () => { if (confirm('Delete ' + s.name + ' and ALL their saved history? This cannot be undone.') && await tcall('DELETE', '?username=' + encodeURIComponent(s.username))) { $('shist').innerHTML = ''; loadStudents(); } });
+    row.append(info, box); $('slist').append(row);
+  });
+}
+async function showHist(s) {
+  const r = await fetch('/api/history?username=' + encodeURIComponent(s.username), { headers: { 'x-teacher-password': pass } });
+  const d = await r.json(); const box = $('shist');
+  box.innerHTML = '<h2>History: ' + escHtml(s.name) + '</h2>';
+  if (!d.attempts || !d.attempts.length) { box.innerHTML += '<p>No essays yet.</p>'; return; }
+  d.attempts.forEach(a => {
+    const row = document.createElement('div'); row.className = 'q'; row.style.cursor = 'pointer';
+    row.innerHTML = '<div><b>' + a.overall + ' / 90</b> &nbsp; <small>' + fmt(a.date) + ' · ' + a.words + ' words</small><br>' + escHtml(a.question) + '</div>';
+    const det = document.createElement('div'); det.style.width = '100%';
+    row.style.flexWrap = 'wrap'; row.append(det);
+    row.onclick = async () => {
+      if (det.innerHTML) { det.innerHTML = ''; return; }
+      const x = await (await fetch('/api/history?username=' + encodeURIComponent(s.username) + '&id=' + a.id, { headers: { 'x-teacher-password': pass } })).json();
+      det.innerHTML = '<p><b>Essay:</b></p><pre style="white-space:pre-wrap;font:14px system-ui">' + escHtml(x.attempt.essay) + '</pre>' + renderFeedback(x.attempt.feedback);
+    };
+    box.append(row);
+  });
+  box.scrollIntoView({ behavior: 'smooth' });
+}
+$('screate').onclick = async () => {
+  const d = await tcall('POST', '', { name: $('sn').value, username: $('su').value, password: $('sp').value });
+  if (d) { say('smsg', 'Account created. Username: ' + $('su').value.trim().toLowerCase() + ' / Password: ' + $('sp').value, true); $('sn').value = $('su').value = $('sp').value = ''; loadStudents(); }
 };
 
 const saved = sessionStorage.getItem('tpw');
