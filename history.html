@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My History</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.hh{max-width:900px;margin:0 auto;padding:20px;font-family:Arial,sans-serif}
+.stats{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0}
+.stat{flex:1;min-width:130px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:12px;text-align:center}
+.stat b{display:block;font-size:26px;color:#1e2a78}.stat small{color:#6b7280}
+.day{margin:22px 0 6px;font-weight:700;color:#374151;border-bottom:2px solid #e5e7eb;padding-bottom:4px}
+.row{background:#fff;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:8px}
+.row>button{all:unset;display:flex;gap:12px;align-items:center;width:100%;box-sizing:border-box;padding:12px;cursor:pointer}
+.row .sc{font-weight:700;color:#1e2a78;min-width:64px}.row .qt{flex:1;font-size:14px;color:#374151}.row .mt{font-size:12px;color:#6b7280;white-space:nowrap}
+.detail{padding:0 16px 16px;border-top:1px solid #e5e7eb}
+.detail pre{white-space:pre-wrap;font:14px Arial;background:#f9fafb;padding:12px;border-radius:6px}
+</style>
+</head>
+<body>
+<header class="site-header"><div class="inner"><h1>My History</h1><a class="back-link" href="practice.html">← Back to Practice</a></div></header>
+<div class="hh" id="root"><p>Loading...</p></div>
+<script src="fbview.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+let token = null; try { token = localStorage.getItem('ptk_token'); } catch (e) {}
+const auth = { Authorization: 'Bearer ' + token };
+
+function fmtDay(iso) { return new Date(iso).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }); }
+function fmtTime(iso) { return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+
+function trend(list) {  // oldest -> newest, last 20
+  const pts = list.slice(0, 20).reverse().map(a => a.overall);
+  if (pts.length < 2) return '';
+  const W = 600, H = 120, step = W / (pts.length - 1);
+  const xy = pts.map((v, i) => (i * step).toFixed(1) + ',' + (H - (v / 90) * H).toFixed(1)).join(' ');
+  return '<h3>Score trend (last ' + pts.length + ' essays)</h3><svg viewBox="-10 -10 ' + (W + 20) + ' ' + (H + 20) + '" style="width:100%;background:#fff;border:1px solid #e5e7eb;border-radius:8px"><polyline points="' + xy + '" fill="none" stroke="#1e2a78" stroke-width="3"/>' +
+    pts.map((v, i) => '<circle cx="' + (i * step) + '" cy="' + (H - (v / 90) * H) + '" r="4" fill="#1e2a78"/>').join('') + '</svg><p style="font-size:12px;color:#6b7280">Scale: 0 (bottom) to 90 (top)</p>';
+}
+
+async function open(a, box) {
+  if (box.dataset.open) { box.innerHTML = ''; box.dataset.open = ''; return; }
+  box.innerHTML = '<p>Loading...</p>';
+  const r = await fetch('/api/history?id=' + encodeURIComponent(a.id), { headers: auth });
+  const d = await r.json();
+  if (!r.ok) { box.innerHTML = '<p>' + escHtml(d.error) + '</p>'; return; }
+  const t = d.attempt;
+  box.dataset.open = '1';
+  box.innerHTML = '<div class="detail"><p><b>Question:</b> ' + escHtml(t.question) + '</p><p><b>Your essay (' + t.words + ' words):</b></p><pre>' + escHtml(t.essay) + '</pre>' + renderFeedback(t.feedback) + '</div>';
+}
+
+(async () => {
+  const root = $('root');
+  if (!token) { root.innerHTML = '<p>Please <a href="practice.html">log in on the Practice page</a> first.</p>'; return; }
+  const r = await fetch('/api/history', { headers: auth });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { root.innerHTML = '<p>' + escHtml(d.error || 'Error') + ' <a href="practice.html">Log in</a></p>'; return; }
+  const list = d.attempts;
+  if (!list.length) { root.innerHTML = '<p>No essays yet. <a href="practice.html">Write your first one!</a></p>'; return; }
+  const scores = list.map(a => a.overall), best = Math.max(...scores);
+  const last5 = scores.slice(0, 5), avg = Math.round(last5.reduce((x, y) => x + y, 0) / last5.length);
+  let h = '<div class="stats"><div class="stat"><b>' + list.length + '</b><small>Essays written</small></div><div class="stat"><b>' + scores[0] + '</b><small>Latest score</small></div><div class="stat"><b>' + avg + '</b><small>Average (last ' + last5.length + ')</small></div><div class="stat"><b>' + best + '</b><small>Best score</small></div></div>' + trend(list) + '<h3>All attempts</h3><div id="rows"></div>';
+  root.innerHTML = h;
+  let curDay = '';
+  list.forEach(a => {
+    const day = fmtDay(a.date);
+    if (day !== curDay) { curDay = day; const dd = document.createElement('div'); dd.className = 'day'; dd.textContent = day; $('rows').append(dd); }
+    const row = document.createElement('div'); row.className = 'row';
+    const btn = document.createElement('button');
+    btn.innerHTML = '<span class="sc">' + a.overall + ' / 90</span><span class="qt">' + escHtml(a.question) + '</span><span class="mt">' + a.words + ' words · ' + fmtTime(a.date) + '</span>';
+    const box = document.createElement('div');
+    btn.onclick = () => open(a, box);
+    row.append(btn, box); $('rows').append(row);
+  });
+})();
+</script>
+</body>
+</html>
