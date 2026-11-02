@@ -1,43 +1,54 @@
 const L = require('./_lib.js');
 const USERS = 'pte:users';
+const ROLES = ['student', 'teacher'];
 
 module.exports = async (req, res) => {
   try {
     if (!process.env.TEACHER_PASSWORD) return res.status(500).json({ error: 'TEACHER_PASSWORD is not set in Vercel' });
-    if (!L.isTeacher(req)) return res.status(401).json({ error: 'Wrong teacher password' });
     const redis = L.getRedis();
+    const actor = await L.getActor(req, redis);
+    if (!L.canManageContent(actor)) return res.status(401).json({ error: 'Not allowed' });
     const b = req.body || {};
 
-    if (req.method === 'GET') {
+    if (req.method === 'GET') {  // owner sees everyone, staff teachers see students only
       const all = (await redis.hgetall(USERS)) || {};
-      const rows = await Promise.all(Object.keys(all).sort().map(async n => {
+      const names = Object.keys(all).filter(n => L.isOwner(actor) || (all[n].role || 'student') === 'student').sort();
+      const rows = await Promise.all(names.map(async n => {
         const cnt = await redis.llen('pte:hist:' + n);
         let last = null;
         if (cnt) { const a = await redis.lindex('pte:hist:' + n, 0); last = a && a.date; }
-        return { username: n, name: all[n].name, created: all[n].created, attempts: cnt, last };
+        return { username: n, name: all[n].name, role: all[n].role || 'student', created: all[n].created, attempts: cnt, last };
       }));
       return res.status(200).json({ students: rows });
     }
 
-    if (req.method === 'POST') {  // create
+    // Everything below changes accounts: owner only
+    if (!L.isOwner(actor)) return res.status(403).json({ error: 'Only the owner can create, change or delete accounts.' });
+
+    if (req.method === 'POST') {
       const username = L.cleanUsername(b.username);
       const pw = String(b.password || '');
-      if (!username) return res.status(400).json({ error: 'Username must be 3-30 characters: letters, numbers, dot, dash or underscore.' });
+      const role = ROLES.includes(b.role) ? b.role : 'student';
+      if (!username || username === 'owner') return res.status(400).json({ error: 'Username must be 3-30 characters: letters, numbers, dot, dash or underscore (and cannot be "owner").' });
       if (pw.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters.' });
       if (await redis.hget(USERS, username)) return res.status(400).json({ error: 'That username already exists.' });
       const { salt, hash } = L.hashPw(pw);
-      await redis.hset(USERS, { [username]: { username, name: String(b.name || '').trim().slice(0, 60) || username, salt, hash, created: new Date().toISOString() } });
+      await redis.hset(USERS, { [username]: { username, name: String(b.name || '').trim().slice(0, 60) || username, role, salt, hash, created: new Date().toISOString() } });
       return res.status(200).json({ ok: true });
     }
 
-    if (req.method === 'PUT') {  // reset password
+    if (req.method === 'PUT') {
       const username = L.cleanUsername(b.username);
-      const pw = String(b.password || '');
       const u = username && await redis.hget(USERS, username);
-      if (!u) return res.status(404).json({ error: 'Student not found.' });
-      if (pw.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters.' });
-      const { salt, hash } = L.hashPw(pw);
-      await redis.hset(USERS, { [username]: Object.assign({}, u, { salt, hash }) });
+      if (!u) return res.status(404).json({ error: 'Account not found.' });
+      const next = Object.assign({}, u);
+      if (b.password !== undefined && b.password !== '') {
+        if (String(b.password).length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+        const { salt, hash } = L.hashPw(String(b.password));
+        next.salt = salt; next.hash = hash;
+      }
+      if (ROLES.includes(b.role)) next.role = b.role;
+      await redis.hset(USERS, { [username]: next });
       return res.status(200).json({ ok: true });
     }
 

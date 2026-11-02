@@ -50,4 +50,13 @@ function cleanUsername(s) {
   return /^[a-z0-9._-]{3,30}$/.test(s) ? s : null;
 }
 
-module.exports = { getRedis, isTeacher, hashPw, checkPw, sign, verify, getStudent, cleanUsername };
+// Who is calling? Owner (TEACHER_PASSWORD header) or a logged-in account with a role ('student' by default)
+async function getActor(req, redis) {
+  if (isTeacher(req)) return { role: 'owner', username: 'owner', name: 'Owner' };
+  const u = await getStudent(req, redis);
+  return u ? { role: u.role || 'student', username: u.username, name: u.name } : null;
+}
+const isOwner = a => !!a && a.role === 'owner';
+const canManageContent = a => !!a && (a.role === 'owner' || a.role === 'teacher');
+
+module.exports = { getRedis, isTeacher, hashPw, checkPw, sign, verify, getStudent, cleanUsername, getActor, isOwner, canManageContent };

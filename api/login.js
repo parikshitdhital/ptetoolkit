@@ -6,7 +6,7 @@ module.exports = async (req, res) => {
 
     if (req.method === 'GET') {  // "am I still logged in?"
       const u = await L.getStudent(req, redis);
-      return u ? res.status(200).json({ ok: true, name: u.name, username: u.username })
+      return u ? res.status(200).json({ ok: true, name: u.name, username: u.username, role: u.role || 'student' })
                : res.status(401).json({ error: 'Not logged in' });
     }
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -27,7 +27,7 @@ module.exports = async (req, res) => {
     }
     await redis.del(fk);
     const token = L.sign({ u: u.username, pv: u.hash.slice(0, 12), exp: Date.now() + 30 * 864e5 });
-    return res.status(200).json({ token, name: u.name, username: u.username });
+    return res.status(200).json({ token, name: u.name, username: u.username, role: u.role || 'student' });
   } catch (e) {
     return res.status(500).json({ error: e.message || 'Server error' });
   }
