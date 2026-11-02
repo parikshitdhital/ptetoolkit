@@ -17,6 +17,16 @@
 .tp .hint{color:#6b7280;font-size:13px;margin-top:4px}
 .tp .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#1e2a78;margin-left:6px}
 .tp .badge.t{background:#fef3c7;color:#92400e}
+.tp button.tab{background:#e5e7eb;color:#111;margin:10px 6px 0 0}
+.tp button.tab.on{background:#1e2a78;color:#fff}
+.tp .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tp .ic{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:8px;font-size:12px}
+.tp .ic img{width:100%;height:100px;object-fit:contain;background:#f7f7f7;border-radius:4px}
+.tp .ic button{padding:4px 8px;font-size:12px;margin:4px 4px 0 0}
+.tp .sec{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:12px}
+.tp .srow{display:flex;gap:6px;margin-top:6px}
+.tp .srow input{flex:1}
+.tp .srow button{margin:0;padding:6px 10px}
 #login{max-width:360px;margin:40px auto;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:24px}
 #login input{margin-bottom:8px}
 #panel{display:none}
@@ -39,28 +49,53 @@
 
   <div id="panel">
     <div class="bar"><b id="who"></b><button class="out" id="logout">Logout</button></div>
+    <div><button class="tab on" data-t="t-essay">Essay</button><button class="tab" data-t="t-di">Describe Image</button><button class="tab" data-t="t-acc">Accounts</button></div>
 
-    <h2>Add essay questions</h2>
-    <textarea id="newq" placeholder="Paste the essay topic here..."></textarea>
-    <p class="hint">To add several at once, separate them with a line containing only ---</p>
-    <button id="save">Save question(s)</button>
-    <div class="msg" id="msg"></div>
-    <h2>Saved questions (<span id="count">0</span>)</h2>
-    <div id="list"></div>
-
-    <div id="ownerOnly">
-      <h2 style="margin-top:36px">Create an account</h2>
-      <p class="hint">Only you (the owner) can create, change or delete accounts. Give people their username and password yourself.</p>
-      <input id="sn" placeholder="Full name" style="margin-top:8px">
-      <input id="su" placeholder="Username (e.g. ram.k)" style="margin-top:8px" autocapitalize="off">
-      <input id="sp" placeholder="Password (at least 6 characters)" style="margin-top:8px">
-      <select id="sr" style="margin-top:8px"><option value="student">Student</option><option value="teacher">Staff teacher</option></select>
-      <button id="screate">Create account</button>
+    <div class="pane" id="t-essay">
+      <h2>Add essay questions</h2>
+      <textarea id="newq" placeholder="Paste the essay topic here..."></textarea>
+      <p class="hint">To add several at once, separate them with a line containing only ---</p>
+      <button id="save">Save question(s)</button>
+      <div class="msg" id="msg"></div>
+      <h2>Saved questions (<span id="count">0</span>)</h2>
+      <div id="list"></div>
     </div>
-    <div class="msg" id="smsg"></div>
-    <h2>Accounts (<span id="scount">0</span>)</h2>
-    <div id="slist"></div>
-    <div id="shist"></div>
+
+    <div class="pane" id="t-di" style="display:none">
+      <h2>Sentences</h2>
+      <p class="hint" id="di-note"></p>
+      <div id="di-sections"></div>
+      <button id="di-save">Save sentences</button>
+      <button class="out" id="di-reset" style="margin-left:6px">Reset to built-in sentences</button>
+      <div class="msg" id="di-msg"></div>
+
+      <h2>Images (<span id="di-count">0</span>)</h2>
+      <p class="hint">Students see only the images you add here. If there are none, they see the built-in set. Big photos are shrunk automatically.</p>
+      <input type="file" id="di-file" accept="image/*" multiple>
+      <input type="file" id="di-replace" accept="image/*" style="display:none">
+      <div class="msg" id="di-imsg"></div>
+      <div id="di-import" style="display:none;margin:10px 0">
+        <button id="di-importbtn">Import the built-in starter images</button>
+        <span class="hint">Copies the 17 starter images into your list so you can rename or delete them.</span>
+      </div>
+      <div class="grid" id="di-images" style="margin-top:10px"></div>
+    </div>
+
+    <div class="pane" id="t-acc" style="display:none">
+      <div id="ownerOnly">
+        <h2>Create an account</h2>
+        <p class="hint">Only you (the owner) can create, change or delete accounts. Give people their username and password yourself.</p>
+        <input id="sn" placeholder="Full name" style="margin-top:8px">
+        <input id="su" placeholder="Username (e.g. ram.k)" style="margin-top:8px" autocapitalize="off">
+        <input id="sp" placeholder="Password (at least 6 characters)" style="margin-top:8px">
+        <select id="sr" style="margin-top:8px"><option value="student">Student</option><option value="teacher">Staff teacher</option></select>
+        <button id="screate">Create account</button>
+      </div>
+      <div class="msg" id="smsg"></div>
+      <h2>Accounts (<span id="scount">0</span>)</h2>
+      <div id="slist"></div>
+      <div id="shist"></div>
+    </div>
   </div>
 </div>
 <script src="fbview.js"></script>
@@ -93,7 +128,7 @@ async function login(user, pass, silent) {
   $('login').style.display = 'none'; $('panel').style.display = 'block';
   $('who').textContent = isOwner() ? 'Logged in as Owner' : 'Logged in as ' + auth.name + ' (staff teacher)';
   $('ownerOnly').style.display = isOwner() ? 'block' : 'none';
-  loadQuestions(); loadStudents();
+  loadQuestions(); loadStudents(); loadDI();
 }
 $('loginBtn').onclick = () => login($('lu').value, $('pw').value, false);
 $('pw').addEventListener('keydown', e => { if (e.key === 'Enter') login($('lu').value, $('pw').value, false); });
@@ -188,11 +223,117 @@ $('screate').onclick = async () => {
   if (d) { say('smsg', 'Account created. Username: ' + u + '  /  Password: ' + pw, true); $('sn').value = $('su').value = $('sp').value = ''; loadStudents(); }
 };
 
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('button.tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('button.tab').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.pane').forEach(p => p.style.display = p.id === b.dataset.t ? 'block' : 'none');
+});
+
+/* ---------- Describe Image manager ---------- */
+let diSeed = null, diCfg = { sections: [], images: [] };
+async function seed() { if (!diSeed) diSeed = await (await fetch('/di-seed.json')).json(); return diSeed; }
+async function dcall(method, body, query) {
+  const r = await fetch('/api/describe' + (query || ''), { method, headers: Object.assign({}, J, hdr()), body: body ? JSON.stringify(body) : undefined });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || 'Something went wrong (error ' + r.status + ')');
+  return d;
+}
+async function loadDI() {
+  diCfg = await fetch('/api/describe').then(r => r.json()).catch(() => ({ sections: [], images: [] }));
+  let secs = diCfg.sections;
+  if (!secs || !secs.length) {
+    $('di-note').textContent = 'Students currently see the built-in sentences. Edit them below and press Save to switch to your own version.';
+    try { secs = (await seed()).sections; } catch (e) { secs = []; }
+  } else $('di-note').textContent = 'Students see these sentences. Click a box to edit, ✕ to delete, or add new ones.';
+  renderSections(secs); renderImages();
+}
+function renderSections(secs) {
+  const box = $('di-sections'); box.innerHTML = '';
+  secs.forEach(sec => {
+    const d = document.createElement('div'); d.className = 'sec';
+    const lab = document.createElement('input'); lab.className = 'lab'; lab.value = sec.label; lab.style.fontWeight = 'bold';
+    const rows = document.createElement('div');
+    const addRow = text => {
+      const r = document.createElement('div'); r.className = 'srow';
+      const i = document.createElement('input'); i.className = 'st'; i.value = text; i.placeholder = 'e.g. It is evident that ___';
+      const x = document.createElement('button'); x.className = 'del'; x.textContent = '✕'; x.onclick = () => r.remove();
+      r.append(i, x); rows.append(r);
+    };
+    (sec.sentences || []).forEach(addRow);
+    const add = document.createElement('button'); add.className = 'out'; add.textContent = '+ Add sentence'; add.style.marginTop = '8px';
+    add.onclick = () => { addRow(''); rows.lastChild.querySelector('input').focus(); };
+    d.append(lab, rows, add); box.append(d);
+  });
+}
+function readSections() {
+  return [...document.querySelectorAll('#di-sections .sec')].map(d => ({
+    label: d.querySelector('.lab').value.trim(),
+    sentences: [...d.querySelectorAll('.st')].map(i => i.value.trim()).filter(Boolean)
+  }));
+}
+$('di-save').onclick = async () => {
+  try { await dcall('POST', { action: 'sections_save', sections: readSections() }); say('di-msg', 'Saved. Students will see the new sentences.', true); loadDI(); }
+  catch (e) { say('di-msg', e.message, false); }
+};
+$('di-reset').onclick = async () => {
+  if (!confirm('Remove your custom sentences and go back to the built-in ones?')) return;
+  try { await dcall('POST', { action: 'sections_reset' }); say('di-msg', 'Back to the built-in sentences.', true); loadDI(); }
+  catch (e) { say('di-msg', e.message, false); }
+};
+
+function compress(file) {  // shrink in the browser so uploads stay small and fast
+  return new Promise((ok, no) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const sc = Math.min(1, 900 / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+      const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+      let q = 0.85, d; do { d = c.toDataURL('image/jpeg', q); q -= 0.1; } while (d.length > 300000 && q > 0.3);
+      URL.revokeObjectURL(url); ok(d);
+    };
+    img.onerror = () => no(new Error('That file is not an image.'));
+    img.src = url;
+  });
+}
+function renderImages() {
+  const imgs = diCfg.images || [];
+  $('di-count').textContent = imgs.length; $('di-images').innerHTML = '';
+  $('di-import').style.display = imgs.length ? 'none' : 'block';
+  imgs.forEach(i => {
+    const c = document.createElement('div'); c.className = 'ic';
+    c.innerHTML = '<img loading="lazy" alt=""><div class="t"></div>';
+    c.querySelector('img').src = '/api/describe?img=' + encodeURIComponent(i.id);
+    c.querySelector('.t').textContent = i.title || '(no title)';
+    const mk = (t, cls, fn) => { const b = document.createElement('button'); b.textContent = t; b.className = cls; b.onclick = fn; c.append(b); };
+    mk('Rename', 'out', async () => { const t = prompt('Title for this image (only you see it):', i.title || ''); if (t !== null) { try { await dcall('POST', { action: 'image_edit', id: i.id, title: t }); loadDI(); } catch (e) { say('di-imsg', e.message, false); } } });
+    mk('Replace', 'out', () => { $('di-replace').onchange = async () => { const f = $('di-replace').files[0]; $('di-replace').value = ''; if (!f) return; try { const data = await compress(f); await dcall('POST', { action: 'image_add', title: i.title, data }); await dcall('DELETE', null, '?img=' + encodeURIComponent(i.id)); say('di-imsg', 'Image replaced.', true); loadDI(); } catch (e) { say('di-imsg', e.message, false); } }; $('di-replace').click(); });
+    mk('Delete', 'del', async () => { if (confirm('Delete this image?')) { try { await dcall('DELETE', null, '?img=' + encodeURIComponent(i.id)); loadDI(); } catch (e) { say('di-imsg', e.message, false); } } });
+    $('di-images').append(c);
+  });
+}
+$('di-file').onchange = async () => {
+  const files = [...$('di-file').files]; $('di-file').value = '';
+  let n = 0;
+  for (const f of files) {
+    try { say('di-imsg', 'Uploading ' + (++n) + ' of ' + files.length + '...', true); const data = await compress(f); await dcall('POST', { action: 'image_add', title: f.name.replace(/\.[^.]+$/, ''), data }); }
+    catch (e) { say('di-imsg', f.name + ': ' + e.message, false); return; }
+  }
+  say('di-imsg', files.length + ' image(s) added.', true); loadDI();
+};
+$('di-importbtn').onclick = async () => {
+  try {
+    const sd = await seed(); let n = 0;
+    for (const data of sd.images) { say('di-imsg', 'Importing ' + (++n) + ' of ' + sd.images.length + '...', true); await dcall('POST', { action: 'image_add', title: 'Starter image ' + n, data }); }
+    say('di-imsg', 'Imported ' + sd.images.length + ' images.', true); loadDI();
+  } catch (e) { say('di-imsg', e.message, false); }
+};
+
 /* ---------- remember login for this tab ---------- */
 try {
   const saved = JSON.parse(sessionStorage.getItem('tauth') || 'null');
   if (saved && saved.owner) login('', saved.pass, true);
-  else if (saved && saved.token) { auth = saved; fetch('/api/questions?auth=1', { headers: hdr() }).then(r => { if (r.ok) { $('login').style.display = 'none'; $('panel').style.display = 'block'; $('who').textContent = 'Logged in as ' + auth.name + ' (staff teacher)'; $('ownerOnly').style.display = 'none'; loadQuestions(); loadStudents(); } else auth = null; }); }
+  else if (saved && saved.token) { auth = saved; fetch('/api/questions?auth=1', { headers: hdr() }).then(r => { if (r.ok) { $('login').style.display = 'none'; $('panel').style.display = 'block'; $('who').textContent = 'Logged in as ' + auth.name + ' (staff teacher)'; $('ownerOnly').style.display = 'none'; loadQuestions(); loadStudents(); loadDI(); } else auth = null; }); }
 } catch (e) {}
 </script>
 </body>
