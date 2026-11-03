@@ -57,6 +57,7 @@ module.exports = async (req, res) => {
       if (!username) return res.status(400).json({ error: 'Bad username' });
       await redis.hdel(USERS, username);
       await redis.del('pte:hist:' + username);
+      for (const t of ['swt', 'di', 'coll']) await redis.del('pte:prog:' + t + ':' + username);
       return res.status(200).json({ ok: true });
     }
     return res.status(405).json({ error: 'Method not allowed' });
