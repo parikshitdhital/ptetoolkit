@@ -71,15 +71,7 @@
 
 <main>
 
-  <div class="nav-row">
-    <button class="btn2 active" id="nav-student" onclick="switchView('student')">Student</button>
-    <span id="teacher-login-area">
-      <input type="password" id="pw-input" placeholder="Teacher password" style="padding:6px 10px;border:1px solid #bbb;border-radius:8px;font-size:13px;width:150px">
-      <button class="btn2" onclick="login()">Login</button>
-    </span>
-    <button class="btn2" id="nav-teacher" style="display:none" onclick="switchView('teacher')">Teacher</button>
-  </div>
-
+  <div id="ptk-userbar"></div>
   <div class="method-box">
     <b>The Method:</b>
     1) Pick one full, independent sentence from the passage and write it exactly as it is.
@@ -115,111 +107,49 @@
 
     <div id="saved-section" style="margin-top:28px">
       <h3 style="font-size:14px;margin-bottom:10px;color:#1a1a2e">Saved Responses</h3>
+      <div id="migrate"></div>
+      <button class="btn-secondary" id="delall" style="display:none;margin-bottom:10px" onclick="deleteAll()">Delete all my saved responses</button>
       <div id="saved-list"></div>
       <p id="no-saves" style="color:#aaa;font-size:13px">No saved responses yet.</p>
     </div>
 
   </div>
 
-  <div id="teacher-view" style="display:none">
-    <div class="teacher-panel">
-      <h3>Manage Passages</h3>
-      <div id="passage-manage-list"></div>
-      <div style="margin-top:14px">
-        <input class="padd-title" id="new-passage-title" placeholder="Passage title (optional, e.g. 'Climate Change')">
-        <textarea class="padd" id="new-passage-text" placeholder="Paste the full passage text here…"></textarea>
-        <button class="btn-primary" style="margin-top:8px" onclick="addPassage()">Add Passage</button>
-      </div>
-      <p style="font-size:11.5px;color:#9ca3af;margin-top:10px">Note: passages you add here are saved only in this browser. The built-in passages are always available to every student.</p>
-    </div>
-  </div>
-
-</main>
+  </main>
 
 <footer class="site-footer">
   PTE Practice Toolkit — built for classroom use
 </footer>
 
+<script src="ptk-auth.js"></script>
 <script>
-/* ── built-in starter passages ── */
-const DEFAULT_PASSAGES = [
-{
-  title: "Urban Green Spaces",
-  text: "Urban green spaces, such as parks and community gardens, play an increasingly important role in modern city planning. Research has consistently shown that access to green areas improves both the physical and mental health of city residents, reducing stress and encouraging physical activity. In addition to health benefits, green spaces help mitigate the urban heat island effect by providing shade and cooling the surrounding air through evapotranspiration. They also support biodiversity by offering habitats for birds, insects, and small mammals within otherwise heavily built environments. Despite these advantages, many rapidly growing cities struggle to allocate sufficient land for green spaces due to competing demands for housing and commercial development. Urban planners increasingly argue that integrating green infrastructure from the earliest stages of city design, rather than treating it as an afterthought, is essential for building healthier and more sustainable urban environments in the future."
-},
-{
-  title: "The Rise of Remote Work",
-  text: "The shift toward remote work, accelerated by the global pandemic, has fundamentally changed how many organisations operate. Employees report greater flexibility and improved work-life balance, as commuting time is eliminated and schedules can often be adjusted to suit personal circumstances. However, remote work also presents challenges, including feelings of isolation, difficulty separating professional and personal life, and reduced spontaneous collaboration between colleagues. Employers have had to invest in new technologies and management practices to maintain productivity and team cohesion across distributed workforces. Some companies have adopted hybrid models, combining in-office and remote work, in an attempt to capture the benefits of both approaches. As this trend continues to evolve, businesses and employees alike are still learning how to balance flexibility with the human need for connection and structure in professional life."
-},
-{
-  title: "Ocean Plastic Pollution",
-  text: "Plastic pollution in the world's oceans has become one of the most pressing environmental issues of the twenty-first century. Millions of tonnes of plastic waste enter marine ecosystems every year, much of it originating from land-based sources such as improperly managed waste and single-use packaging. Once in the ocean, plastic breaks down into smaller fragments known as microplastics, which are ingested by marine organisms and can eventually enter the human food chain through seafood consumption. This pollution not only threatens marine biodiversity but also damages fishing and tourism industries that depend on healthy coastal ecosystems. International efforts to address the crisis have included bans on single-use plastics, improved waste management infrastructure, and global agreements aimed at reducing plastic production. Nevertheless, experts agree that significant, coordinated action across governments, industries, and consumers will be necessary to meaningfully reverse the damage already done to ocean ecosystems."
-},
-{
-  title: "Artificial Intelligence in Healthcare",
-  text: "Artificial intelligence is increasingly being integrated into healthcare systems around the world, offering the potential to improve diagnosis, treatment, and patient outcomes. Machine learning algorithms can analyse vast amounts of medical data, including imaging scans and patient records, often identifying patterns that may be missed by human clinicians. This technology has already shown promise in areas such as early cancer detection, where AI systems can flag suspicious anomalies for further review by specialists. However, the adoption of AI in healthcare also raises important ethical and practical concerns, including questions about data privacy, algorithmic bias, and the appropriate level of human oversight required. Many healthcare professionals emphasise that AI should be viewed as a tool to support, rather than replace, clinical judgement. As regulatory frameworks continue to develop, the successful integration of AI into healthcare will likely depend on building trust between patients, clinicians, and the technology itself."
-},
-{
-  title: "The Decline of Bee Populations",
-  text: "Bee populations around the world have experienced significant declines over the past two decades, raising serious concerns among scientists and farmers alike. Bees play a critical role in pollinating a wide variety of crops, and their decline threatens both global food security and the stability of natural ecosystems. Several factors have been identified as contributing causes, including habitat loss due to agricultural expansion, exposure to pesticides, and the spread of parasites and diseases among bee colonies. Climate change has further compounded these pressures by altering flowering patterns and disrupting the timing of pollination cycles. In response, some governments have introduced restrictions on certain pesticides, while conservation groups have promoted the planting of pollinator-friendly gardens and wildflower habitats. Despite these efforts, experts caution that a coordinated, long-term strategy involving policy change, scientific research, and public awareness will be essential to reverse the ongoing decline in bee populations."
-},
-];
+/* ── built-in starter passages (used only until the teacher adds passages in the Teacher Panel) ── */
+const DEFAULT_PASSAGES = [{"title":"Urban Green Spaces","text":"Urban green spaces, such as parks and community gardens, play an increasingly important role in modern city planning. Research has consistently shown that access to green areas improves both the physical and mental health of city residents, reducing stress and encouraging physical activity. In addition to health benefits, green spaces help mitigate the urban heat island effect by providing shade and cooling the surrounding air through evapotranspiration. They also support biodiversity by offering habitats for birds, insects, and small mammals within otherwise heavily built environments. Despite these advantages, many rapidly growing cities struggle to allocate sufficient land for green spaces due to competing demands for housing and commercial development. Urban planners increasingly argue that integrating green infrastructure from the earliest stages of city design, rather than treating it as an afterthought, is essential for building healthier and more sustainable urban environments in the future."},{"title":"The Rise of Remote Work","text":"The shift toward remote work, accelerated by the global pandemic, has fundamentally changed how many organisations operate. Employees report greater flexibility and improved work-life balance, as commuting time is eliminated and schedules can often be adjusted to suit personal circumstances. However, remote work also presents challenges, including feelings of isolation, difficulty separating professional and personal life, and reduced spontaneous collaboration between colleagues. Employers have had to invest in new technologies and management practices to maintain productivity and team cohesion across distributed workforces. Some companies have adopted hybrid models, combining in-office and remote work, in an attempt to capture the benefits of both approaches. As this trend continues to evolve, businesses and employees alike are still learning how to balance flexibility with the human need for connection and structure in professional life."},{"title":"Ocean Plastic Pollution","text":"Plastic pollution in the world's oceans has become one of the most pressing environmental issues of the twenty-first century. Millions of tonnes of plastic waste enter marine ecosystems every year, much of it originating from land-based sources such as improperly managed waste and single-use packaging. Once in the ocean, plastic breaks down into smaller fragments known as microplastics, which are ingested by marine organisms and can eventually enter the human food chain through seafood consumption. This pollution not only threatens marine biodiversity but also damages fishing and tourism industries that depend on healthy coastal ecosystems. International efforts to address the crisis have included bans on single-use plastics, improved waste management infrastructure, and global agreements aimed at reducing plastic production. Nevertheless, experts agree that significant, coordinated action across governments, industries, and consumers will be necessary to meaningfully reverse the damage already done to ocean ecosystems."},{"title":"Artificial Intelligence in Healthcare","text":"Artificial intelligence is increasingly being integrated into healthcare systems around the world, offering the potential to improve diagnosis, treatment, and patient outcomes. Machine learning algorithms can analyse vast amounts of medical data, including imaging scans and patient records, often identifying patterns that may be missed by human clinicians. This technology has already shown promise in areas such as early cancer detection, where AI systems can flag suspicious anomalies for further review by specialists. However, the adoption of AI in healthcare also raises important ethical and practical concerns, including questions about data privacy, algorithmic bias, and the appropriate level of human oversight required. Many healthcare professionals emphasise that AI should be viewed as a tool to support, rather than replace, clinical judgement. As regulatory frameworks continue to develop, the successful integration of AI into healthcare will likely depend on building trust between patients, clinicians, and the technology itself."},{"title":"The Decline of Bee Populations","text":"Bee populations around the world have experienced significant declines over the past two decades, raising serious concerns among scientists and farmers alike. Bees play a critical role in pollinating a wide variety of crops, and their decline threatens both global food security and the stability of natural ecosystems. Several factors have been identified as contributing causes, including habitat loss due to agricultural expansion, exposure to pesticides, and the spread of parasites and diseases among bee colonies. Climate change has further compounded these pressures by altering flowering patterns and disrupting the timing of pollination cycles. In response, some governments have introduced restrictions on certain pesticides, while conservation groups have promoted the planting of pollinator-friendly gardens and wildflower habitats. Despite these efforts, experts caution that a coordinated, long-term strategy involving policy change, scientific research, and public awareness will be essential to reverse the ongoing decline in bee populations."}];
 
-let passages = [];
+let passages = DEFAULT_PASSAGES;
 let currentIdx = 0;
-let teacherPasswordOK = false;
-const TEACHER_PASSWORD = "tutor123";
+const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-/* ── storage ── */
-function loadCustomPassages() {
+/* ── passages from the teacher's list (fallback: built-in) ── */
+async function loadPassages() {
   try {
-    const raw = localStorage.getItem("swt_custom_passages");
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) { return []; }
-}
-
-function saveCustomPassages(list) {
-  try { localStorage.setItem("swt_custom_passages", JSON.stringify(list)); } catch (e) {}
-}
-
-function rebuildPassages() {
-  passages = [...DEFAULT_PASSAGES, ...loadCustomPassages()];
-}
-
-/* ── nav ── */
-function switchView(view) {
-  document.getElementById("student-view").style.display = view === "student" ? "" : "none";
-  document.getElementById("teacher-view").style.display = view === "teacher" ? "" : "none";
-  document.getElementById("nav-student").classList.toggle("active", view === "student");
-  document.getElementById("nav-teacher").classList.toggle("active", view === "teacher");
-  if (view === "teacher") renderTeacherPanel();
-}
-
-function login() {
-  const val = document.getElementById("pw-input").value;
-  if (val === TEACHER_PASSWORD) {
-    teacherPasswordOK = true;
-    document.getElementById("teacher-login-area").style.display = "none";
-    document.getElementById("nav-teacher").style.display = "";
-    switchView("teacher");
-  } else {
-    alert("Wrong password.");
-  }
+    const r = await fetch("/api/content?tool=swt");
+    const d = await r.json();
+    if (d.items && d.items.length) passages = d.items.map(i => ({ id: i.id, title: i.title || "Untitled Passage", text: i.text }));
+  } catch (e) { /* keep built-ins */ }
 }
 
 /* ── passage select / display ── */
 function populateSelect() {
   const sel = document.getElementById("passage-select");
-  sel.innerHTML = passages.map((p, i) => `<option value="${i}">${i + 1}. ${p.title}</option>`).join("");
+  sel.innerHTML = passages.map((p, i) => `<option value="${i}">${i + 1}. ${esc(p.title)}</option>`).join("");
   sel.value = currentIdx;
 }
-
 function loadPassage(idx) {
   currentIdx = idx;
   document.getElementById("passage-select").value = idx;
   document.getElementById("passage-box").textContent = passages[idx].text;
 }
-
 function shufflePassage() {
   if (passages.length < 2) { loadPassage(0); return; }
   let next;
@@ -233,123 +163,91 @@ function countWords(text) {
   if (!trimmed) return 0;
   return trimmed.split(/\s+/).length;
 }
-
 function updateCount() {
   const text = document.getElementById("answer-box").value;
   const n = countWords(text);
   const badge = document.getElementById("count-badge");
   const label = document.getElementById("count-label");
   badge.textContent = n + " words";
-
-  if (n === 0) {
-    badge.className = "count-badge bad";
-    label.textContent = "";
-  } else if (n < 40) {
-    badge.className = "count-badge bad";
-    label.textContent = "Too short — aim for 50–70 words";
-  } else if (n < 50) {
-    badge.className = "count-badge ok";
-    label.textContent = "A bit short — acceptable, but 50–70 is safer";
-  } else if (n <= 70) {
-    badge.className = "count-badge ideal";
-    label.textContent = "Ideal range";
-  } else if (n <= 75) {
-    badge.className = "count-badge ok";
-    label.textContent = "A bit long — acceptable, but 50–70 is safer";
-  } else {
-    badge.className = "count-badge bad";
-    label.textContent = "Too long — over 75 words will lose marks";
-  }
+  if (n === 0) { badge.className = "count-badge bad"; label.textContent = ""; }
+  else if (n < 40) { badge.className = "count-badge bad"; label.textContent = "Too short — aim for 50–70 words"; }
+  else if (n < 50) { badge.className = "count-badge ok"; label.textContent = "A bit short — acceptable, but 50–70 is safer"; }
+  else if (n <= 70) { badge.className = "count-badge ideal"; label.textContent = "Ideal range"; }
+  else if (n <= 75) { badge.className = "count-badge ok"; label.textContent = "A bit long — acceptable, but 50–70 is safer"; }
+  else { badge.className = "count-badge bad"; label.textContent = "Too long — over 75 words will lose marks"; }
 }
-
 function clearAnswer() {
-  if (confirm("Clear your answer?")) {
-    document.getElementById("answer-box").value = "";
-    updateCount();
-  }
+  if (confirm("Clear your answer?")) { document.getElementById("answer-box").value = ""; updateCount(); }
 }
 
-/* ── save / load responses ── */
-function saveResponse() {
+/* ── save / load responses (stored in the student's account) ── */
+async function saveResponse() {
   const text = document.getElementById("answer-box").value.trim();
   if (!text) return;
-  const key = "swt_save_" + Date.now();
-  const entry = {
-    passage: passages[currentIdx].title,
-    text: text,
-    words: countWords(text),
-    at: new Date().toLocaleString()
-  };
-  try {
-    localStorage.setItem(key, JSON.stringify(entry));
-    const msg = document.getElementById("save-msg");
-    msg.textContent = "Saved ✓";
-    setTimeout(() => { msg.textContent = ""; }, 2000);
-    loadSaved();
-  } catch (e) {
-    document.getElementById("save-msg").textContent = "Save failed";
-  }
+  const p = passages[currentIdx], msg = document.getElementById("save-msg");
+  const r = await PTK.api("/api/progress", { method: "POST", body: JSON.stringify({ tool: "swt", data: { passageId: p.id || "", passage: p.title, text, words: countWords(text) } }) });
+  msg.textContent = r.ok ? "Saved ✓" : (r.data.error || "Save failed");
+  setTimeout(() => { msg.textContent = ""; }, 2500);
+  if (r.ok) loadSaved();
 }
-
-function loadSaved() {
-  const list = document.getElementById("saved-list");
-  const noSaves = document.getElementById("no-saves");
+async function loadSaved() {
+  const list = document.getElementById("saved-list"), noSaves = document.getElementById("no-saves");
+  const r = await PTK.api("/api/progress?tool=swt");
+  const items = (r.ok && r.data.attempts) || [];
   list.innerHTML = "";
-  const keys = Object.keys(localStorage).filter(k => k.startsWith("swt_save_")).sort().reverse();
-  if (!keys.length) { noSaves.style.display = "block"; return; }
-  noSaves.style.display = "none";
-  keys.forEach(k => {
-    try {
-      const e = JSON.parse(localStorage.getItem(k));
-      const div = document.createElement("div");
-      div.className = "saved-entry";
-      div.innerHTML = `<div class="saved-meta">${e.at} · ${e.passage} · ${e.words} words</div>${e.text}`;
-      list.appendChild(div);
-    } catch (err) {}
+  document.getElementById("delall").style.display = items.length ? "" : "none";
+  noSaves.style.display = items.length ? "none" : "block";
+  items.forEach(a => {
+    const div = document.createElement("div");
+    div.className = "saved-entry";
+    div.innerHTML = `<div class="saved-meta">${esc(new Date(a.date).toLocaleString())} · ${esc(a.passage)} · ${esc(a.words)} words
+      <a href="#" style="float:right;color:#b91c1c">Delete</a></div>${esc(a.text)}`;
+    div.querySelector("a").onclick = async e => {
+      e.preventDefault();
+      if (!confirm("Delete this saved response?")) return;
+      await PTK.api("/api/progress?tool=swt&id=" + encodeURIComponent(a.id), { method: "DELETE" });
+      loadSaved();
+    };
+    list.appendChild(div);
   });
 }
-
-/* ── teacher panel ── */
-function renderTeacherPanel() {
-  const list = document.getElementById("passage-manage-list");
-  list.innerHTML = passages.map((p, i) => {
-    const isDefault = i < DEFAULT_PASSAGES.length;
-    return `<div class="passage-list-item">
-      <p><b>${p.title}</b>${isDefault ? ' <span style="color:#9ca3af">(built-in)</span>' : ''}<br>${p.text.slice(0, 140)}…</p>
-      ${isDefault ? '' : `<button class="del-btn" onclick="removePassage(${i - DEFAULT_PASSAGES.length})">✕</button>`}
-    </div>`;
-  }).join("");
+async function deleteAll() {
+  if (!confirm("Delete ALL your saved responses? This cannot be undone.")) return;
+  await PTK.api("/api/progress?tool=swt&all=1", { method: "DELETE" });
+  loadSaved();
 }
 
-function addPassage() {
-  const title = document.getElementById("new-passage-title").value.trim() || "Untitled Passage";
-  const text = document.getElementById("new-passage-text").value.trim();
-  if (!text) { alert("Please paste passage text first."); return; }
-  const custom = loadCustomPassages();
-  custom.push({ title, text });
-  saveCustomPassages(custom);
-  rebuildPassages();
+/* ── one-time: bring responses saved in this browser (old version) into the account ── */
+function localSaves() {
+  try { return Object.keys(localStorage).filter(k => k.startsWith("swt_save_")); } catch (e) { return []; }
+}
+function offerMigration() {
+  const keys = localSaves();
+  if (!keys.length) return;
+  const box = document.getElementById("migrate");
+  box.innerHTML = `<div style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:10px;font-size:13px;margin-bottom:10px">
+    You have <b>${keys.length}</b> response(s) saved only in this browser. <button class="btn-secondary" id="migbtn" style="margin-left:6px">Move them to my account</button></div>`;
+  document.getElementById("migbtn").onclick = async () => {
+    for (const k of keys.sort()) {
+      try {
+        const e = JSON.parse(localStorage.getItem(k));
+        const r = await PTK.api("/api/progress", { method: "POST", body: JSON.stringify({ tool: "swt", data: { passage: e.passage, text: e.text, words: e.words } }) });
+        if (r.ok) localStorage.removeItem(k);
+      } catch (err) {}
+    }
+    box.innerHTML = ""; loadSaved();
+  };
+}
+
+/* ── start: login first, then load everything ── */
+PTK.start(async () => {
+  await loadPassages();
   populateSelect();
-  renderTeacherPanel();
-  document.getElementById("new-passage-title").value = "";
-  document.getElementById("new-passage-text").value = "";
-}
-
-function removePassage(customIdx) {
-  const custom = loadCustomPassages();
-  custom.splice(customIdx, 1);
-  saveCustomPassages(custom);
-  rebuildPassages();
-  populateSelect();
-  renderTeacherPanel();
-}
-
-/* ── init ── */
-rebuildPassages();
-populateSelect();
-loadPassage(0);
-updateCount();
-loadSaved();
+  loadPassage(0);
+  updateCount();
+  loadSaved();
+  offerMigration();
+});
 </script>
 <div class="ptk-watermark">Made by Parikshit</div>
 <script>

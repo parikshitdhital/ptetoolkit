@@ -49,7 +49,7 @@
 
   <div id="panel">
     <div class="bar"><b id="who"></b><button class="out" id="logout">Logout</button></div>
-    <div><button class="tab on" data-t="t-essay">Essay</button><button class="tab" data-t="t-di">Describe Image</button><button class="tab" data-t="t-acc">Accounts</button></div>
+    <div><button class="tab on" data-t="t-essay">Essay</button><button class="tab" data-t="t-di">Describe Image</button><button class="tab" data-t="t-swt">Summarize Text</button><button class="tab" data-t="t-acc">Accounts</button></div>
 
     <div class="pane" id="t-essay">
       <h2>Add essay questions</h2>
@@ -79,6 +79,22 @@
         <span class="hint">Copies the 17 starter images into your list so you can rename or delete them.</span>
       </div>
       <div class="grid" id="di-images" style="margin-top:10px"></div>
+    </div>
+
+    <div class="pane" id="t-swt" style="display:none">
+      <h2>Summarize Written Text passages</h2>
+      <p class="hint" id="swt-note"></p>
+      <input id="swt-title" placeholder="Passage title (e.g. Climate Change)">
+      <textarea id="swt-text" placeholder="Paste the full passage here..." style="margin-top:8px"></textarea>
+      <button id="swt-save">Add passage</button>
+      <button class="out" id="swt-cancel" style="display:none;margin-left:6px">Cancel edit</button>
+      <div class="msg" id="swt-msg"></div>
+      <div id="swt-import" style="display:none;margin:10px 0">
+        <button id="swt-importbtn">Import the 5 built-in passages</button>
+        <span class="hint">Copies them into your list so you can edit or delete them.</span>
+      </div>
+      <h2>Passages (<span id="swt-count">0</span>)</h2>
+      <div id="swt-list"></div>
     </div>
 
     <div class="pane" id="t-acc" style="display:none">
@@ -128,7 +144,7 @@ async function login(user, pass, silent) {
   $('login').style.display = 'none'; $('panel').style.display = 'block';
   $('who').textContent = isOwner() ? 'Logged in as Owner' : 'Logged in as ' + auth.name + ' (staff teacher)';
   $('ownerOnly').style.display = isOwner() ? 'block' : 'none';
-  loadQuestions(); loadStudents(); loadDI();
+  loadQuestions(); loadStudents(); loadDI(); loadSWT();
 }
 $('loginBtn').onclick = () => login($('lu').value, $('pw').value, false);
 $('pw').addEventListener('keydown', e => { if (e.key === 'Enter') login($('lu').value, $('pw').value, false); });
@@ -192,8 +208,8 @@ async function showHist(s) {
   const r = await fetch('/api/history?username=' + encodeURIComponent(s.username), { headers: hdr() });
   const d = await r.json(); const box = $('shist');
   box.innerHTML = '<h2>History: ' + escHtml(s.name) + '</h2>';
-  if (!d.attempts || !d.attempts.length) { box.innerHTML += '<p>No essays yet.</p>'; box.scrollIntoView({ behavior: 'smooth' }); return; }
-  if (isOwner()) {
+  if (!d.attempts || !d.attempts.length) { box.innerHTML += '<p>No essays yet.</p>'; d.attempts = []; }
+  if (isOwner() && d.attempts.length) {
     const all = document.createElement('button'); all.className = 'del'; all.textContent = 'Delete ALL of this history';
     all.onclick = async () => { if (confirm('Delete all saved essays for ' + s.name + '? This cannot be undone.')) { await fetch('/api/history?username=' + encodeURIComponent(s.username) + '&all=1', { method: 'DELETE', headers: hdr() }); loadStudents(); showHist(s); } };
     box.append(all);
@@ -215,6 +231,7 @@ async function showHist(s) {
     };
     box.append(row);
   });
+  await showProgress(s, box);
   box.scrollIntoView({ behavior: 'smooth' });
 }
 $('screate').onclick = async () => {
@@ -329,11 +346,83 @@ $('di-importbtn').onclick = async () => {
   } catch (e) { say('di-imsg', e.message, false); }
 };
 
+
+/* ---------- Summarize Written Text passages ---------- */
+let swtEditId = null, swtSeed = null;
+async function ccall(method, body, query) {
+  const r = await fetch('/api/content' + (query || ''), { method, headers: Object.assign({}, J, hdr()), body: body ? JSON.stringify(body) : undefined });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || 'Something went wrong (error ' + r.status + ')');
+  return d;
+}
+async function loadSWT() {
+  const d = await fetch('/api/content?tool=swt').then(r => r.json()).catch(() => ({ items: [] }));
+  const items = d.items || [];
+  $('swt-count').textContent = items.length;
+  $('swt-import').style.display = items.length ? 'none' : 'block';
+  $('swt-note').textContent = items.length ? 'Students see exactly these passages.' : 'Students currently see 5 built-in passages. Add your own below, or import the built-in ones to edit them. Once you add any passage, students see only your list.';
+  $('swt-list').innerHTML = '';
+  items.forEach(it => {
+    const row = document.createElement('div'); row.className = 'q';
+    const info = document.createElement('div');
+    info.innerHTML = '<b></b><br><small></small>';
+    info.querySelector('b').textContent = it.title || '(untitled)';
+    info.querySelector('small').textContent = (it.text.split(/\s+/).length) + ' words · ' + it.text.slice(0, 120) + '…';
+    const box = document.createElement('div'); box.style.cssText = 'display:flex;gap:6px';
+    const mk = (t, cls, fn) => { const b = document.createElement('button'); b.textContent = t; b.className = cls; b.style.margin = 0; b.onclick = fn; box.append(b); };
+    mk('Edit', 'out', () => { swtEditId = it.id; $('swt-title').value = it.title; $('swt-text').value = it.text; $('swt-save').textContent = 'Save changes'; $('swt-cancel').style.display = 'inline-block'; $('swt-title').scrollIntoView({ behavior: 'smooth' }); });
+    mk('Delete', 'del', async () => { if (confirm('Delete this passage?')) { try { await ccall('DELETE', null, '?tool=swt&id=' + encodeURIComponent(it.id)); loadSWT(); } catch (e) { say('swt-msg', e.message, false); } } });
+    row.append(info, box); $('swt-list').append(row);
+  });
+}
+function swtReset() { swtEditId = null; $('swt-title').value = ''; $('swt-text').value = ''; $('swt-save').textContent = 'Add passage'; $('swt-cancel').style.display = 'none'; }
+$('swt-cancel').onclick = swtReset;
+$('swt-save').onclick = async () => {
+  const item = { title: $('swt-title').value, text: $('swt-text').value };
+  try {
+    if (swtEditId) await ccall('PUT', { tool: 'swt', id: swtEditId, item });
+    else await ccall('POST', { tool: 'swt', item });
+    say('swt-msg', swtEditId ? 'Changes saved.' : 'Passage added.', true); swtReset(); loadSWT();
+  } catch (e) { say('swt-msg', e.message, false); }
+};
+$('swt-importbtn').onclick = async () => {
+  try {
+    if (!swtSeed) swtSeed = await (await fetch('/swt-seed.json')).json();
+    await ccall('POST', { tool: 'swt', items: swtSeed.items });
+    say('swt-msg', 'Imported ' + swtSeed.items.length + ' passages.', true); loadSWT();
+  } catch (e) { say('swt-msg', e.message, false); }
+};
+
+/* ---------- other tools' progress, shown under a student's history ---------- */
+const PROGRESS_TOOLS = [['swt', 'Summarize Written Text']];
+async function showProgress(s, box) {
+  for (const [tool, label] of PROGRESS_TOOLS) {
+    const r = await fetch('/api/progress?tool=' + tool + '&username=' + encodeURIComponent(s.username), { headers: hdr() });
+    const d = await r.json().catch(() => ({})); const list = d.attempts || [];
+    const h = document.createElement('h2'); h.textContent = label + ' (' + list.length + ')'; box.append(h);
+    if (isOwner() && list.length) {
+      const all = document.createElement('button'); all.className = 'del'; all.textContent = 'Delete ALL ' + label + ' progress';
+      all.onclick = async () => { if (confirm('Delete all ' + label + ' progress for ' + s.name + '?')) { await fetch('/api/progress?tool=' + tool + '&all=1&username=' + encodeURIComponent(s.username), { method: 'DELETE', headers: hdr() }); showHist(s); } };
+      box.append(all);
+    }
+    list.forEach(a => {
+      const row = document.createElement('div'); row.className = 'q'; row.style.marginTop = '8px';
+      const info = document.createElement('div');
+      info.innerHTML = '<small></small><br><span></span>';
+      info.querySelector('small').textContent = fmt(a.date) + ' · ' + (a.passage || a.mode || '') + (a.words ? ' · ' + a.words + ' words' : '');
+      info.querySelector('span').textContent = a.text || (a.score != null ? a.score + ' / ' + a.total : '');
+      row.append(info);
+      if (isOwner()) { const b = document.createElement('button'); b.className = 'del'; b.textContent = 'Delete'; b.onclick = async () => { if (confirm('Delete this record?')) { await fetch('/api/progress?tool=' + tool + '&id=' + encodeURIComponent(a.id) + '&username=' + encodeURIComponent(s.username), { method: 'DELETE', headers: hdr() }); showHist(s); } }; row.append(b); }
+      box.append(row);
+    });
+  }
+}
+
 /* ---------- remember login for this tab ---------- */
 try {
   const saved = JSON.parse(sessionStorage.getItem('tauth') || 'null');
   if (saved && saved.owner) login('', saved.pass, true);
-  else if (saved && saved.token) { auth = saved; fetch('/api/questions?auth=1', { headers: hdr() }).then(r => { if (r.ok) { $('login').style.display = 'none'; $('panel').style.display = 'block'; $('who').textContent = 'Logged in as ' + auth.name + ' (staff teacher)'; $('ownerOnly').style.display = 'none'; loadQuestions(); loadStudents(); loadDI(); } else auth = null; }); }
+  else if (saved && saved.token) { auth = saved; fetch('/api/questions?auth=1', { headers: hdr() }).then(r => { if (r.ok) { $('login').style.display = 'none'; $('panel').style.display = 'block'; $('who').textContent = 'Logged in as ' + auth.name + ' (staff teacher)'; $('ownerOnly').style.display = 'none'; loadQuestions(); loadStudents(); loadDI(); loadSWT(); } else auth = null; }); }
 } catch (e) {}
 </script>
 </body>
