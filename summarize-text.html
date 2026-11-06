@@ -101,9 +101,11 @@
 
     <div class="btn-row">
       <button class="btn-primary" onclick="saveResponse()">Save</button>
+      <button class="btn-primary" id="aibtn" style="background:#0b6bb5" onclick="checkAI()">Check with AI</button>
       <button class="btn-secondary" onclick="clearAnswer()">Clear</button>
       <span id="save-msg"></span>
     </div>
+    <div id="report"></div>
 
     <div id="saved-section" style="margin-top:28px">
       <h3 style="font-size:14px;margin-bottom:10px;color:#1a1a2e">Saved Responses</h3>
@@ -122,6 +124,7 @@
 </footer>
 
 <script src="ptk-auth.js"></script>
+<script src="fbview.js"></script>
 <script>
 /* ── built-in starter passages (used only until the teacher adds passages in the Teacher Panel) ── */
 const DEFAULT_PASSAGES = [{"title":"Urban Green Spaces","text":"Urban green spaces, such as parks and community gardens, play an increasingly important role in modern city planning. Research has consistently shown that access to green areas improves both the physical and mental health of city residents, reducing stress and encouraging physical activity. In addition to health benefits, green spaces help mitigate the urban heat island effect by providing shade and cooling the surrounding air through evapotranspiration. They also support biodiversity by offering habitats for birds, insects, and small mammals within otherwise heavily built environments. Despite these advantages, many rapidly growing cities struggle to allocate sufficient land for green spaces due to competing demands for housing and commercial development. Urban planners increasingly argue that integrating green infrastructure from the earliest stages of city design, rather than treating it as an afterthought, is essential for building healthier and more sustainable urban environments in the future."},{"title":"The Rise of Remote Work","text":"The shift toward remote work, accelerated by the global pandemic, has fundamentally changed how many organisations operate. Employees report greater flexibility and improved work-life balance, as commuting time is eliminated and schedules can often be adjusted to suit personal circumstances. However, remote work also presents challenges, including feelings of isolation, difficulty separating professional and personal life, and reduced spontaneous collaboration between colleagues. Employers have had to invest in new technologies and management practices to maintain productivity and team cohesion across distributed workforces. Some companies have adopted hybrid models, combining in-office and remote work, in an attempt to capture the benefits of both approaches. As this trend continues to evolve, businesses and employees alike are still learning how to balance flexibility with the human need for connection and structure in professional life."},{"title":"Ocean Plastic Pollution","text":"Plastic pollution in the world's oceans has become one of the most pressing environmental issues of the twenty-first century. Millions of tonnes of plastic waste enter marine ecosystems every year, much of it originating from land-based sources such as improperly managed waste and single-use packaging. Once in the ocean, plastic breaks down into smaller fragments known as microplastics, which are ingested by marine organisms and can eventually enter the human food chain through seafood consumption. This pollution not only threatens marine biodiversity but also damages fishing and tourism industries that depend on healthy coastal ecosystems. International efforts to address the crisis have included bans on single-use plastics, improved waste management infrastructure, and global agreements aimed at reducing plastic production. Nevertheless, experts agree that significant, coordinated action across governments, industries, and consumers will be necessary to meaningfully reverse the damage already done to ocean ecosystems."},{"title":"Artificial Intelligence in Healthcare","text":"Artificial intelligence is increasingly being integrated into healthcare systems around the world, offering the potential to improve diagnosis, treatment, and patient outcomes. Machine learning algorithms can analyse vast amounts of medical data, including imaging scans and patient records, often identifying patterns that may be missed by human clinicians. This technology has already shown promise in areas such as early cancer detection, where AI systems can flag suspicious anomalies for further review by specialists. However, the adoption of AI in healthcare also raises important ethical and practical concerns, including questions about data privacy, algorithmic bias, and the appropriate level of human oversight required. Many healthcare professionals emphasise that AI should be viewed as a tool to support, rather than replace, clinical judgement. As regulatory frameworks continue to develop, the successful integration of AI into healthcare will likely depend on building trust between patients, clinicians, and the technology itself."},{"title":"The Decline of Bee Populations","text":"Bee populations around the world have experienced significant declines over the past two decades, raising serious concerns among scientists and farmers alike. Bees play a critical role in pollinating a wide variety of crops, and their decline threatens both global food security and the stability of natural ecosystems. Several factors have been identified as contributing causes, including habitat loss due to agricultural expansion, exposure to pesticides, and the spread of parasites and diseases among bee colonies. Climate change has further compounded these pressures by altering flowering patterns and disrupting the timing of pollination cycles. In response, some governments have introduced restrictions on certain pesticides, while conservation groups have promoted the planting of pollinator-friendly gardens and wildflower habitats. Despite these efforts, experts caution that a coordinated, long-term strategy involving policy change, scientific research, and public awareness will be essential to reverse the ongoing decline in bee populations."}];
@@ -200,9 +203,20 @@ async function loadSaved() {
   items.forEach(a => {
     const div = document.createElement("div");
     div.className = "saved-entry";
-    div.innerHTML = `<div class="saved-meta">${esc(new Date(a.date).toLocaleString())} · ${esc(a.passage)} · ${esc(a.words)} words
-      <a href="#" style="float:right;color:#b91c1c">Delete</a></div>${esc(a.text)}`;
-    div.querySelector("a").onclick = async e => {
+    div.innerHTML = `<div class="saved-meta">${esc(new Date(a.date).toLocaleString())} · ${esc(a.passage)} · ${esc(a.words)} words${a.fb ? " · <b>" + esc(a.score) + " / 9</b>" : ""}${a.status === "pending" ? " · <b style='color:#b45309'>⏳ waiting for AI check</b>" : ""}
+      <a href="#" class="del" style="float:right;color:#b91c1c">Delete</a></div>${esc(a.text)}${a.status === "pending" ? `<div><button class="btn-secondary chk" style="margin-top:6px">Check now</button><div class="pm"></div></div>` : ""}${a.fb ? `<div><a href="#" class="rep" style="font-size:12px">View AI report</a><div class="repbox" style="display:none"></div></div>` : ""}`;
+    if (a.fb) div.querySelector(".rep").onclick = e => { e.preventDefault(); const b = div.querySelector(".repbox"); if (b.style.display === "none") { b.innerHTML = renderReport(a.fb); b.style.display = "block"; } else b.style.display = "none"; };
+    if (a.status === "pending") {
+      div.querySelector(".pm").innerHTML = aiErrorHtml({ cause: a.reason, retryAt: a.retryAt, saved: true }, "answer", "this list");
+      div.querySelector(".chk").onclick = async e => {
+        const b = e.target; b.disabled = true; b.textContent = "Checking… (up to 40 seconds)";
+        const x = await PTK.api("/api/swt-feedback", { method: "POST", body: JSON.stringify({ attemptId: a.id }) });
+        if (x.ok) { document.getElementById("report").innerHTML = renderReport(x.data); loadSaved(); return; }
+        b.disabled = false; b.textContent = "Check now";
+        div.querySelector(".pm").innerHTML = x.data.cause ? aiErrorHtml(x.data, "answer", "this list") : `<p style="color:#b91c1c"><b>${esc(x.data.error || "Something went wrong.")}</b></p>`;
+      };
+    }
+    div.querySelector("a.del").onclick = async e => {
       e.preventDefault();
       if (!confirm("Delete this saved response?")) return;
       await PTK.api("/api/progress?tool=swt&id=" + encodeURIComponent(a.id), { method: "DELETE" });
@@ -214,6 +228,49 @@ async function loadSaved() {
 async function deleteAll() {
   if (!confirm("Delete ALL your saved responses? This cannot be undone.")) return;
   await PTK.api("/api/progress?tool=swt&all=1", { method: "DELETE" });
+  loadSaved();
+}
+
+/* ── AI check (your method, scored out of 9) ── */
+const li = a => (a && a.length) ? "<ul style='margin:4px 0 0 18px;padding:0'>" + a.map(x => "<li>" + x + "</li>").join("") + "</ul>" : "";
+function renderReport(f) {
+  const tag = f.mode === "method"
+    ? "<span style='background:#dcfce7;color:#15803d;padding:2px 10px;border-radius:12px;font-size:12px'>✓ Built with your method</span>"
+    : "<span style='background:#fef3c7;color:#92400e;padding:2px 10px;border-radius:12px;font-size:12px'>Judged as a general answer (not built from passage sentences)</span>";
+  let h = `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin-top:14px">
+    <div style="font-size:36px;font-weight:700;color:#1e2a78">${esc(f.score)} <span style="font-size:18px">/ 9</span></div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:6px">Estimated score for this section (not an official PTE result)</div>${tag}`;
+  if (f.ai === false) h += `<p style="font-size:12px;color:#92400e">The AI was busy, so this is the rule-based check of your method.</p>`;
+  if (f.traits) h += `<table style="margin:10px 0;font-size:13px;border-collapse:collapse"><tr><td style="padding:2px 12px 2px 0">Content</td><td><b>${f.traits.content}/4</b></td></tr><tr><td>Form</td><td><b>${f.traits.form}/1</b></td></tr><tr><td>Grammar</td><td><b>${f.traits.grammar}/2</b></td></tr><tr><td>Vocabulary</td><td><b>${f.traits.vocab}/2</b></td></tr></table>`;
+  if (f.strengths && f.strengths.length) h += `<p style="color:#15803d;font-weight:700;margin:12px 0 0">What worked</p>` + li(f.strengths.map(esc));
+  const fixes = (f.issues || []).map(i => `<b>−${esc(i.deduction)}</b> ${esc(i.message)}${i.why ? " <i>(" + esc(i.why) + ")</i>" : ""}`);
+  if (f.joining_deduction) fixes.push(`<b>−${esc(f.joining_deduction)}</b> The joining words or sentence choice could fit the meaning better.`);
+  if (fixes.length) h += `<p style="color:#b45309;font-weight:700;margin:12px 0 0">To fix</p>` + li(fixes);
+  if (f.suggestions && f.suggestions.length) h += `<p style="color:#1e2a78;font-weight:700;margin:12px 0 0">Suggestions</p>` + li(f.suggestions.map(esc));
+  if (f.better_version) h += `<p style="font-weight:700;margin:12px 0 0">A better answer in your method</p><div style="background:#f3f4f6;border-radius:6px;padding:8px;font-size:14px">${esc(f.better_version)}</div>`;
+  if (f.summary) h += `<p style="margin:12px 0 0">${esc(f.summary)}</p>`;
+  return h + "</div>";
+}
+let swtPending = null;   // { id, text }: an answer saved because the AI was unavailable
+async function checkAI() {
+  const text = document.getElementById("answer-box").value.trim();
+  if (countWords(text) < 3) { alert("Write your summary first."); return; }
+  const p = passages[currentIdx], box = document.getElementById("report"), btn = document.getElementById("aibtn");
+  btn.disabled = true;
+  box.innerHTML = "<p style='font-size:14px'><b>Checking your answer…</b> This can take up to 40 seconds when the AI is busy. Please keep this page open.</p>";
+  const r = await PTK.api("/api/swt-feedback", { method: "POST", body: JSON.stringify({ passage: { id: p.id || "", title: p.title, text: p.text }, answer: text, attemptId: swtPending && swtPending.text === text ? swtPending.id : undefined }) });
+  btn.disabled = false;
+  if (!r.ok) {
+    if (r.data.cause) {   // the AI could not answer: the server saved the answer; explain why and when to retry
+      swtPending = { id: r.data.attempt_id, text };
+      box.innerHTML = aiErrorHtml(r.data, "answer", "Saved Responses below") + `<button class="btn-primary" onclick="checkAI()">Check again</button>`;
+      loadSaved(); return;
+    }
+    box.innerHTML = `<p style="color:#b91c1c"><b>${esc(r.data.error || "Something went wrong.")}</b></p>` + (r.data.login ? "" : `<button class="btn-primary" onclick="checkAI()">Try again</button>`);
+    return;
+  }
+  swtPending = null;
+  box.innerHTML = renderReport(r.data);
   loadSaved();
 }
 

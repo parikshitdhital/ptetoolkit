@@ -20,8 +20,10 @@
 <main>
   <div class="hero">
     <h2>Practice tools for PTE Speaking &amp; Writing</h2>
-    <p>Pick a tool below to start practicing. Everything runs right in your browser — no login required.</p>
+    <p>Pick a tool below to start practicing. Log in with the username and password your teacher gave you, and your progress is saved in your account.</p>
   </div>
+
+  <div id="home-auth" style="text-align:center;margin:0 0 18px;font-size:14px"></div>
 
   <div class="card-grid">
 
@@ -29,6 +31,7 @@
       <div class="icon">🖼️</div>
       <h3>Describe Image</h3>
       <p>Build custom templates for any image type using drag-and-drop sentence starters, plus a guide for describing normal photos.</p>
+      <div class="prog" data-tool="di"></div>
       <a class="btn" href="describe-image.html">Open Tool</a>
     </div>
 
@@ -36,6 +39,7 @@
       <div class="icon">📚</div>
       <h3>Collocation Practice</h3>
       <p>480+ PTE-relevant collocations across List, Flashcards, Quiz, Meaning Quiz, and Passage Fill-in-the-Blanks modes.</p>
+      <div class="prog" data-tool="coll"></div>
       <a class="btn" href="collocations.html">Open Tool</a>
     </div>
 
@@ -47,9 +51,18 @@
     </div>
 
     <div class="card">
+      <div class="icon">🎯</div>
+      <h3>Essay Practice</h3>
+      <p>Write a timed essay in a real-test layout, then get AI feedback and an estimated score based on the master template.</p>
+      <div class="prog" data-tool="essay"></div>
+      <a class="btn" href="practice.html">Open Tool</a>
+    </div>
+
+    <div class="card">
       <div class="icon">📝</div>
       <h3>Summarize Written Text</h3>
-      <p>Practice the sentence-stitching technique with built-in passages, live word-count feedback, and teacher-managed custom passages.</p>
+      <p>Practice the sentence-stitching technique with your teacher's passages, live word-count feedback, and an AI check of your method.</p>
+      <div class="prog" data-tool="swt"></div>
       <a class="btn" href="summarize-text.html">Open Tool</a>
     </div>
 
@@ -64,10 +77,48 @@
 </main>
 
 <footer class="site-footer">
-  PTE Practice Toolkit — built for classroom use
+  PTE Practice Toolkit — built for classroom use · <a href="teacher.html" style="color:inherit;opacity:.7">Teacher login</a>
 </footer>
 
 <div class="ptk-watermark">Made by Parikshit</div>
+<script src="ptk-auth.js"></script>
+<script>
+/* login-aware homepage: greeting + a one-line progress summary on each tool card */
+(function () {
+  var esc = window.escHtml;
+  function line(tool, text) { var el = document.querySelector('.prog[data-tool="' + tool + '"]'); if (el) el.innerHTML = text; }
+  function summarize() {
+    var P = function (u) { return PTK.api(u).then(function (r) { return (r.ok && r.data.attempts) || []; }).catch(function () { return []; }); };
+    P('/api/history').then(function (all) {
+      var a = all.filter(function (x) { return x.status !== 'pending'; }), w = all.length - a.length;
+      var tail = w ? ' · <b>' + w + '</b> waiting for AI feedback' : '';
+      line('essay', a.length ? '<b>' + a.length + '</b> essay' + (a.length > 1 ? 's' : '') + ' · latest <b>' + a[0].overall + '/90</b> · best <b>' + Math.max.apply(null, a.map(function (x) { return x.overall; })) + '</b>' + tail : (w ? '<b>' + w + '</b> waiting for AI feedback' : 'No essays yet'));
+    });
+    P('/api/progress?tool=swt').then(function (a) {
+      var sc = a.filter(function (x) { return x.fb; });
+      line('swt', a.length ? '<b>' + a.length + '</b> saved' + (sc.length ? ' · latest AI score <b>' + sc[0].score + '/9</b>' : '') : 'Nothing saved yet');
+    });
+    P('/api/progress?tool=di').then(function (a) { line('di', a.length ? '<b>' + a.length + '</b> saved paragraph' + (a.length > 1 ? 's' : '') : 'Nothing saved yet'); });
+    P('/api/progress?tool=coll').then(function (a) {
+      var p = function (x) { return Math.round(x.score / x.total * 100); };
+      line('coll', a.length ? '<b>' + a.length + '</b> session' + (a.length > 1 ? 's' : '') + ' · latest <b>' + p(a[0]) + '%</b> · best <b>' + Math.max.apply(null, a.map(p)) + '%</b>' : 'No results yet');
+    });
+  }
+  function greet(me) {
+    var box = document.getElementById('home-auth');
+    box.innerHTML = 'Hi, <b>' + esc(me.name) + '</b> · <a id="home-out" style="color:#1e2a78;cursor:pointer;text-decoration:underline">Log out</a>';
+    document.getElementById('home-out').onclick = PTK.logout;
+    summarize();
+  }
+  function loggedOut() {
+    document.getElementById('home-auth').innerHTML = '<button class="btn" id="home-in" style="cursor:pointer">Log in</button><div style="font-size:12px;color:#6b7280;margin-top:6px">The Essay Guide is open to everyone. The practice tools need a login.</div>';
+    document.getElementById('home-in').onclick = function () { PTK.loginCard(function (me) { greet(me); }, { closable: true }); };
+    document.querySelectorAll('.prog').forEach(function (el) { el.textContent = '🔒 Login required'; el.style.opacity = '.7'; });
+  }
+  PTK.me().then(function (me) { if (me) greet(me); else loggedOut(); });
+})();
+</script>
+<style>.prog{font-size:12px;color:#374151;margin:6px 0 10px;min-height:16px}</style>
 <script>
 /* hide banner on scroll down, show on scroll up */
 (function () {

@@ -1,5 +1,6 @@
 {
   "functions": {
-    "api/feedback.js": { "maxDuration": 60 }
+    "api/feedback.js": { "maxDuration": 60 },
+    "api/swt-feedback.js": { "maxDuration": 60 }
   }
 }

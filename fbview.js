@@ -25,4 +25,39 @@
     h += '<h3>Summary</h3><p>' + esc(f.summary) + '</p><p><b>Fix these next time:</b></p>' + li(f.top_fixes);
     return '<div class="fb">' + h + '</div>';
   };
+
+  /* ── "The AI could not answer" message: cause, when to try again, and whether the work was saved ── */
+  var CAUSE = {
+    overloaded: "Server overload: Google's free AI servers are very busy right now.",
+    rate_limit: 'Usage limit (per minute): too many AI requests are being sent at the moment.',
+    daily_quota: "Usage limit reached: the free AI's daily token quota is used up for today.",
+    student_cap: 'Your daily AI feedback limit has been reached.',
+    model: 'The AI model is not available right now.',
+    key: 'The AI service is not set up correctly.'
+  };
+  function dur(sec) {
+    var m = Math.round(sec / 60);
+    if (m < 90) return 'about ' + Math.max(1, m) + ' minute' + (m > 1 ? 's' : '');
+    var h = Math.round(sec / 360) / 10; return 'about ' + h + ' hours';
+  }
+  // info: { cause, retryAt, error?, saved }   kind: 'essay' | 'answer'   where: where the saved work can be found
+  window.aiErrorHtml = function (info, kind, where) {
+    info = info || {};
+    var what = esc(info.error || CAUSE[info.cause] || 'The AI could not answer right now.');
+    var when = info.retryAt ? new Date(info.retryAt) : null, left = when ? (when - Date.now()) / 1000 : null;
+    var local = when ? when.toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+    var wait;
+    if (info.cause === 'key') wait = 'This is a setup problem, not your fault. Please tell your teacher.';
+    else if (when && left <= 0) wait = 'The waiting time is over, so you can try again now.';
+    else if (info.cause === 'daily_quota') wait = 'Google renews this quota at <b>' + esc(local) + '</b> (your local time), in ' + dur(left) + '. Please check back after that.';
+    else if (info.cause === 'student_cap') wait = 'You can use it again after <b>' + esc(local) + '</b> (your local time), in ' + dur(left) + '.';
+    else if (info.cause === 'rate_limit') wait = 'Please try again in ' + dur(left || 60) + ' (around <b>' + esc(local) + '</b>).';
+    else wait = 'Please check back in ' + dur(left || 600) + ' (around <b>' + esc(local) + '</b>).';
+    var saved = info.saved
+      ? '✓ Your ' + (kind || 'essay') + ' was <b>saved automatically</b>. You will find it in ' + esc(where || 'My History') + ' and can submit it again from there.'
+      : 'Your ' + (kind || 'essay') + ' is still on this page. Copy it before you leave.';
+    return '<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:14px;margin:10px 0;font-size:14px;line-height:1.5">' +
+      '<p style="margin:0 0 6px"><b>⚠️ ' + what + '</b></p><p style="margin:0 0 6px">' + wait + '</p><p style="margin:0;color:#15803d">' + saved + '</p></div>';
+  };
+  window.aiCauseText = CAUSE;
 })();

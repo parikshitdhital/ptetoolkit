@@ -128,7 +128,7 @@ async function mark() {
     const r = await fetch('/api/feedback', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (store.get('ptk_token') || '') },
-      body: JSON.stringify({ question: q.text, questionId: q.id, essay })
+      body: JSON.stringify({ question: q.text, questionId: q.id, essay, attemptId: pending.attemptId })
     });
     const f = await r.json().catch(() => ({ error: 'The server took too long to answer.' }));
     if (!r.ok) {
@@ -140,6 +140,12 @@ async function mark() {
       if (r.status === 400) {  // e.g. essay too short: go back to editing
         alert(f.error); d.style.display = 'none'; $('test').style.display = 'block';
         timerId = setInterval(() => { left--; tick(); if (left <= 0) submit(); }, 1000); return;
+      }
+      if (f.cause) {  // the AI could not answer: the server already saved the essay; explain why and when to retry
+        pending.attemptId = f.attempt_id || pending.attemptId;
+        d.innerHTML = aiErrorHtml(f, 'essay', 'My History') + '<p><button class="again" id="retry">Submit again</button> &nbsp; <a href="history.html">Go to My History</a></p><p><b>Your essay:</b></p><textarea readonly style="width:100%;height:200px"></textarea>';
+        d.querySelector('textarea').value = essay;
+        $('retry').onclick = mark; return;
       }
       throw new Error(f.error || 'Something went wrong');
     }

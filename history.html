@@ -15,6 +15,8 @@
 .row>button{all:unset;display:flex;gap:12px;align-items:center;width:100%;box-sizing:border-box;padding:12px;cursor:pointer}
 .row .sc{font-weight:700;color:#1e2a78;min-width:64px}.row .qt{flex:1;font-size:14px;color:#374151}.row .mt{font-size:12px;color:#6b7280;white-space:nowrap}
 .detail{padding:0 16px 16px;border-top:1px solid #e5e7eb}
+.wait{background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 12px;margin:12px 0;font-size:14px}
+.gbtn{background:#0b6bb5;color:#fff;border:0;border-radius:6px;padding:9px 16px;font-size:14px;cursor:pointer;margin-right:8px}
 .dbtn{background:#b91c1c;color:#fff;border:0;border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer}
 .detail pre{white-space:pre-wrap;font:14px Arial;background:#f9fafb;padding:12px;border-radius:6px}
 </style>
@@ -32,7 +34,7 @@ function fmtDay(iso) { return new Date(iso).toLocaleDateString('en-GB', { weekda
 function fmtTime(iso) { return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
 
 function trend(list) {  // oldest -> newest, last 20
-  const pts = list.slice(0, 20).reverse().map(a => a.overall);
+  const pts = list.filter(a => a.status !== 'pending').slice(0, 20).reverse().map(a => a.overall);
   if (pts.length < 2) return '';
   const W = 600, H = 120, step = W / (pts.length - 1);
   const xy = pts.map((v, i) => (i * step).toFixed(1) + ',' + (H - (v / 90) * H).toFixed(1)).join(' ');
@@ -48,6 +50,24 @@ async function open(a, box) {
   if (!r.ok) { box.innerHTML = '<p>' + escHtml(d.error) + '</p>'; return; }
   const t = d.attempt;
   box.dataset.open = '1';
+  if (t.status === 'pending') {   // saved while the AI was unavailable: explain why, and let the student submit it again
+    box.innerHTML = '<div class="detail"><div class="pm"></div><p><b>Question:</b> ' + escHtml(t.question) + '</p><p><b>Your essay (' + t.words + ' words):</b></p><pre>' + escHtml(t.essay) + '</pre><p><button class="gbtn">Get feedback now</button><button class="dbtn">Delete this attempt</button></p></div>';
+    box.querySelector('.pm').innerHTML = aiErrorHtml({ cause: t.reason, retryAt: t.retryAt, saved: true }, 'essay', 'this list');
+    box.querySelector('.gbtn').onclick = async e => {
+      const b = e.target; b.disabled = true; b.textContent = 'Marking... (up to a minute)';
+      const x = await fetch('/api/feedback', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, auth), body: JSON.stringify({ attemptId: a.id }) });
+      const f = await x.json().catch(() => ({}));
+      if (x.ok) { location.reload(); return; }
+      b.disabled = false; b.textContent = 'Get feedback now';
+      box.querySelector('.pm').innerHTML = f.cause ? aiErrorHtml(f, 'essay', 'this list') : '<p style="color:#b91c1c"><b>' + escHtml(f.error || 'Something went wrong. Please try again.') + '</b></p>';
+    };
+    box.querySelector('.dbtn').onclick = async () => {
+      if (!confirm('Delete this attempt for good? This cannot be undone.')) return;
+      const x = await fetch('/api/history?id=' + encodeURIComponent(a.id), { method: 'DELETE', headers: auth });
+      if (x.ok) location.reload(); else alert('Could not delete. Please try again.');
+    };
+    return;
+  }
   box.innerHTML = '<div class="detail"><p><b>Question:</b> ' + escHtml(t.question) + '</p><p><b>Your essay (' + t.words + ' words):</b></p><pre>' + escHtml(t.essay) + '</pre>' + renderFeedback(t.feedback) + '<p><button class="dbtn">Delete this attempt</button></p></div>';
   box.querySelector('.dbtn').onclick = async () => {
     if (!confirm('Delete this attempt for good? This cannot be undone.')) return;
@@ -64,9 +84,15 @@ async function open(a, box) {
   if (!r.ok) { root.innerHTML = '<p>' + escHtml(d.error || 'Error') + ' <a href="practice.html">Log in</a></p>'; return; }
   const list = d.attempts;
   if (!list.length) { root.innerHTML = '<p>No essays yet. <a href="practice.html">Write your first one!</a></p>'; return; }
-  const scores = list.map(a => a.overall), best = Math.max(...scores);
-  const last5 = scores.slice(0, 5), avg = Math.round(last5.reduce((x, y) => x + y, 0) / last5.length);
-  let h = '<div class="stats"><div class="stat"><b>' + list.length + '</b><small>Essays written</small></div><div class="stat"><b>' + scores[0] + '</b><small>Latest score</small></div><div class="stat"><b>' + avg + '</b><small>Average (last ' + last5.length + ')</small></div><div class="stat"><b>' + best + '</b><small>Best score</small></div></div>' + trend(list) + '<h3>All attempts</h3><p><button class="dbtn" id="delall">Delete all my history</button></p><div id="rows"></div>';
+  const done = list.filter(a => a.status !== 'pending'), waiting = list.length - done.length;
+  const scores = done.map(a => a.overall);
+  let stats = '';
+  if (scores.length) {
+    const best = Math.max(...scores), last5 = scores.slice(0, 5), avg = Math.round(last5.reduce((x, y) => x + y, 0) / last5.length);
+    stats = '<div class="stats"><div class="stat"><b>' + done.length + '</b><small>Essays marked</small></div><div class="stat"><b>' + scores[0] + '</b><small>Latest score</small></div><div class="stat"><b>' + avg + '</b><small>Average (last ' + last5.length + ')</small></div><div class="stat"><b>' + best + '</b><small>Best score</small></div></div>' + trend(done);
+  }
+  const banner = waiting ? '<div class="wait">⏳ <b>' + waiting + '</b> essay' + (waiting > 1 ? 's are' : ' is') + ' saved and waiting for AI feedback. Open ' + (waiting > 1 ? 'one' : 'it') + ' below and press <b>Get feedback now</b>.</div>' : '';
+  let h = banner + stats + '<h3>All attempts</h3><p><button class="dbtn" id="delall">Delete all my history</button></p><div id="rows"></div>';
   root.innerHTML = h;
   $('delall').onclick = async () => {
     if (!confirm('Delete ALL your saved essays and scores? This cannot be undone.')) return;
@@ -79,7 +105,7 @@ async function open(a, box) {
     if (day !== curDay) { curDay = day; const dd = document.createElement('div'); dd.className = 'day'; dd.textContent = day; $('rows').append(dd); }
     const row = document.createElement('div'); row.className = 'row';
     const btn = document.createElement('button');
-    btn.innerHTML = '<span class="sc">' + a.overall + ' / 90</span><span class="qt">' + escHtml(a.question) + '</span><span class="mt">' + a.words + ' words · ' + fmtTime(a.date) + '</span>';
+    btn.innerHTML = '<span class="sc">' + (a.status === 'pending' ? '⏳ Waiting' : a.overall + ' / 90') + '</span><span class="qt">' + escHtml(a.question) + '</span><span class="mt">' + a.words + ' words · ' + fmtTime(a.date) + '</span>';
     const box = document.createElement('div');
     btn.onclick = () => open(a, box);
     row.append(btn, box); $('rows').append(row);

@@ -216,13 +216,13 @@ async function showHist(s) {
   }
   d.attempts.forEach(a => {
     const row = document.createElement('div'); row.className = 'q'; row.style.cssText = 'cursor:pointer;flex-wrap:wrap;margin-top:10px';
-    row.innerHTML = '<div><b>' + a.overall + ' / 90</b> &nbsp; <small>' + fmt(a.date) + ' · ' + a.words + ' words</small><br>' + escHtml(a.question) + '</div>';
+    row.innerHTML = '<div><b>' + (a.status === 'pending' ? '⏳ Waiting for AI feedback' : a.overall + ' / 90') + '</b> &nbsp; <small>' + fmt(a.date) + ' · ' + a.words + ' words</small><br>' + escHtml(a.question) + '</div>';
     const det = document.createElement('div'); det.style.width = '100%'; row.append(det);
     row.onclick = async e => {
       if (e.target.tagName === 'BUTTON') return;
       if (det.innerHTML) { det.innerHTML = ''; return; }
       const x = await (await fetch('/api/history?username=' + encodeURIComponent(s.username) + '&id=' + a.id, { headers: hdr() })).json();
-      det.innerHTML = '<p><b>Essay:</b></p><pre style="white-space:pre-wrap;font:14px system-ui">' + escHtml(x.attempt.essay) + '</pre>' + renderFeedback(x.attempt.feedback);
+      det.innerHTML = '<p><b>Essay:</b></p><pre style="white-space:pre-wrap;font:14px system-ui">' + escHtml(x.attempt.essay) + '</pre>' + (x.attempt.status === 'pending' ? aiErrorHtml({ cause: x.attempt.reason, retryAt: x.attempt.retryAt, saved: true }, 'essay', 'the student\'s history') : renderFeedback(x.attempt.feedback));
       if (isOwner()) {
         const b = document.createElement('button'); b.className = 'del'; b.textContent = 'Delete this attempt';
         b.onclick = async () => { if (confirm('Delete this attempt?')) { await fetch('/api/history?username=' + encodeURIComponent(s.username) + '&id=' + a.id, { method: 'DELETE', headers: hdr() }); loadStudents(); showHist(s); } };
@@ -394,7 +394,7 @@ $('swt-importbtn').onclick = async () => {
 };
 
 /* ---------- other tools' progress, shown under a student's history ---------- */
-const PROGRESS_TOOLS = [['swt', 'Summarize Written Text']];
+const PROGRESS_TOOLS = [['swt', 'Summarize Written Text'], ['di', 'Describe Image'], ['coll', 'Collocations']];
 async function showProgress(s, box) {
   for (const [tool, label] of PROGRESS_TOOLS) {
     const r = await fetch('/api/progress?tool=' + tool + '&username=' + encodeURIComponent(s.username), { headers: hdr() });
@@ -409,7 +409,7 @@ async function showProgress(s, box) {
       const row = document.createElement('div'); row.className = 'q'; row.style.marginTop = '8px';
       const info = document.createElement('div');
       info.innerHTML = '<small></small><br><span></span>';
-      info.querySelector('small').textContent = fmt(a.date) + ' · ' + (a.passage || a.mode || '') + (a.words ? ' · ' + a.words + ' words' : '');
+      info.querySelector('small').textContent = fmt(a.date) + ' · ' + (a.passage || a.mode || '') + (a.words ? ' · ' + a.words + ' words' : '') + (tool === 'swt' && a.fb ? ' · AI score ' + a.score + '/9' : '') + (a.status === 'pending' ? ' · ⏳ waiting for AI check' : '');
       info.querySelector('span').textContent = a.text || (a.score != null ? a.score + ' / ' + a.total : '');
       row.append(info);
       if (isOwner()) { const b = document.createElement('button'); b.className = 'del'; b.textContent = 'Delete'; b.onclick = async () => { if (confirm('Delete this record?')) { await fetch('/api/progress?tool=' + tool + '&id=' + encodeURIComponent(a.id) + '&username=' + encodeURIComponent(s.username), { method: 'DELETE', headers: hdr() }); showHist(s); } }; row.append(b); }
