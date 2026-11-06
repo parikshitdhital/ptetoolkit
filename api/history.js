@@ -21,7 +21,7 @@ module.exports = async (req, res) => {
         return a ? res.status(200).json({ attempt: a }) : res.status(404).json({ error: 'Attempt not found' });
       }
       return res.status(200).json({
-        attempts: list.map(a => ({ id: a.id, date: a.date, question: String(a.question || '').slice(0, 140), words: a.words, overall: a.overall }))
+        attempts: list.map(a => ({ id: a.id, date: a.date, question: String(a.question || '').slice(0, 140), words: a.words, overall: a.overall, status: a.status || 'done', reason: a.reason || null, retryAt: a.retryAt || null }))
       });
     }
 

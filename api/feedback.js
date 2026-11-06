@@ -1,7 +1,7 @@
 const GUIDE = require('./_guide.js');
 const L = require('./_lib.js');
+const G = require('./_gemini.js');
 
-const MODELS = (process.env.GEMINI_MODELS || process.env.GEMINI_MODEL || 'gemini-flash-latest,gemini-flash-lite-latest').split(',').map(x => x.trim()).filter(Boolean);
 const DAILY_LIMIT = parseInt(process.env.FEEDBACK_DAILY_LIMIT || '10', 10);
 const MAX = { content: 3, form: 2, dsc: 2, grammar: 2, glr: 2, vocab: 2, spelling: 2 };
 
@@ -56,35 +56,6 @@ async function countUse(redis, username) {
 }
 
 // Free-tier reliability: try each model in turn, retry a few rounds, stay inside Vercel's time limit
-async function askGemini(payload) {
-  const deadline = Date.now() + 52000;
-  for (let round = 0; round < 4; round++) {
-    for (const model of MODELS) {
-      const left = deadline - Date.now();
-      if (left < 5000) return { busy: true };
-      const ctl = new AbortController();
-      const timer = setTimeout(() => ctl.abort(), Math.min(25000, left));
-      try {
-        const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', {
-          method: 'POST', signal: ctl.signal,
-          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
-          body: payload
-        });
-        if (r.status === 400 || r.status === 401 || r.status === 403)
-          return { fatal: 'Google rejected the request (error ' + r.status + '). Check GEMINI_API_KEY in Vercel.' };
-        if (!r.ok) continue;                       // 404, 429, 5xx: try the next model
-        const data = await r.json();
-        let txt = (((data.candidates || [])[0] || {}).content || {}).parts;
-        txt = (txt || []).map(p => p.text || '').join('').replace(/```json|```/g, '').trim();
-        return { fb: JSON.parse(txt) };
-      } catch (e) { /* timeout, network problem or bad JSON: try again */ }
-      finally { clearTimeout(timer); }
-    }
-    await new Promise(r => setTimeout(r, 1500 * (round + 1)));
-  }
-  return { busy: true };
-}
-
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   try {
@@ -92,24 +63,43 @@ module.exports = async (req, res) => {
     try { redis = L.getRedis(); } catch (e) { return res.status(500).json({ error: e.message }); }
     const student = await L.getStudent(req, redis);
     if (!student) return res.status(401).json({ error: 'Please log in again.', login: true });
-    if (!process.env.GEMINI_API_KEY) return res.status(500).json({ error: 'GEMINI_API_KEY is not set in Vercel (add it, then redeploy)' });
+    const key = 'pte:hist:' + student.username;
+    const body = req.body || {};
 
-    const question = String((req.body && req.body.question) || '').slice(0, 2000);
-    const essay = String((req.body && req.body.essay) || '').trim().slice(0, 6000);
+    // Either a brand-new essay, or a re-submit of one that was saved while the AI was unavailable
+    let question = String(body.question || '').slice(0, 2000), essay = String(body.essay || '').trim().slice(0, 6000);
+    let questionId = String(body.questionId || '').slice(0, 60), existing = null;
+    const attemptId = String(body.attemptId || '').slice(0, 40);
+    if (attemptId) {
+      existing = await L.findRecord(redis, key, attemptId);
+      if (!existing) return res.status(404).json({ error: 'That saved essay was not found (it may have been deleted).' });
+      if (existing.feedback) return res.status(200).json(Object.assign({}, existing.feedback, { attempt_id: existing.id }));
+      question = existing.question; essay = existing.essay; questionId = existing.questionId || '';
+    }
     const words = (essay.match(/\S+/g) || []).length;
     if (words < 20) return res.status(400).json({ error: 'Your essay is too short to mark. Write at least a few sentences.' });
 
-    if (await overLimit(redis, student.username)) return res.status(429).json({ error: 'Daily feedback limit reached (' + DAILY_LIMIT + ' per day). Please try again tomorrow.' });
+    // When the AI cannot answer, the essay is saved to the student's history right away
+    const newId = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    const pend = async (info, status) => {
+      const rec = { id: existing ? existing.id : newId, date: existing ? existing.date : new Date().toISOString(), questionId, question, essay, words, status: 'pending', reason: info.cause, retryAt: info.retryAt || null, lastTry: new Date().toISOString() };
+      let saved = false;
+      try { await L.putRecord(redis, key, rec, existing ? existing.id : null, 200); saved = true; } catch (e) {}
+      return res.status(status).json({ error: G.MESSAGES[info.cause], cause: info.cause, retryAt: info.retryAt || null, retryAfterSec: info.retryAfterSec || null, limit: DAILY_LIMIT, saved, attempt_id: rec.id });
+    };
+
+    if (!process.env.GEMINI_API_KEY) return pend({ cause: 'key' }, 500);
+    if (await overLimit(redis, student.username)) return pend(G.failure('student_cap'), 429);
 
     const payload = JSON.stringify({
       systemInstruction: { parts: [{ text: SYSTEM }] },
       contents: [{ role: 'user', parts: [{ text: 'QUESTION:\n' + question + '\n\nSTUDENT ESSAY (' + words + ' words):\n' + essay }] }],
       generationConfig: { responseMimeType: 'application/json', temperature: 0.3 }
     });
-    const out = await askGemini(payload);
-    if (out.fatal) return res.status(500).json({ error: out.fatal });
-    if (out.busy) return res.status(503).json({ error: "The AI is very busy right now (Google's free servers are crowded). Your essay is safe on this page. Press Try again in a minute. This did not count against your daily limit." });
-    const fb = out.fb;
+    const out = await G.askGemini(payload, { deadlineMs: 50000, rounds: 4 });
+    if (out.fatal) return pend({ cause: 'key' }, 500);
+    if (out.busy) return pend(out, 503);
+    const fb = out.json;
     await countUse(redis, student.username);
 
     // Server-side scoring: form from word count, clamp the rest, total out of 90
@@ -124,10 +114,9 @@ module.exports = async (req, res) => {
     fb.word_count = words;
     fb.overall = Math.round((raw / 15) * 90);
 
-    try {  // save to this student's history
-      const attempt = { id: Date.now().toString(36), date: new Date().toISOString(), questionId: String((req.body && req.body.questionId) || ''), question, essay, words, overall: fb.overall, feedback: fb };
-      await redis.lpush('pte:hist:' + student.username, attempt);
-      await redis.ltrim('pte:hist:' + student.username, 0, 199);
+    try {  // save (or complete the pending record) in this student's history
+      const attempt = { id: existing ? existing.id : newId, date: existing ? existing.date : new Date().toISOString(), questionId, question, essay, words, overall: fb.overall, status: 'done', feedback: fb };
+      await L.putRecord(redis, key, attempt, existing ? existing.id : null, 200);
       fb.attempt_id = attempt.id;
     } catch (e) { /* feedback still returned even if saving fails */ }
     return res.status(200).json(fb);

@@ -59,4 +59,18 @@ async function getActor(req, redis) {
 const isOwner = a => !!a && a.role === 'owner';
 const canManageContent = a => !!a && (a.role === 'owner' || a.role === 'teacher');
 
-module.exports = { getRedis, isTeacher, hashPw, checkPw, sign, verify, getStudent, cleanUsername, getActor, isOwner, canManageContent };
+// Save a record at the top of a student's list, or replace an existing one (same id) when re-submitting
+async function putRecord(redis, key, rec, replaceId, cap) {
+  if (replaceId) {
+    const list = (await redis.lrange(key, 0, -1)) || [];
+    const i = list.findIndex(x => x.id === replaceId);
+    if (i >= 0) { list[i] = rec; await redis.del(key); await redis.rpush(key, ...list); return; }
+  }
+  await redis.lpush(key, rec);
+  await redis.ltrim(key, 0, (cap || 200) - 1);
+}
+async function findRecord(redis, key, id) {
+  return ((await redis.lrange(key, 0, -1)) || []).find(x => x.id === id) || null;
+}
+
+module.exports = { putRecord, findRecord, getRedis, isTeacher, hashPw, checkPw, sign, verify, getStudent, cleanUsername, getActor, isOwner, canManageContent };
